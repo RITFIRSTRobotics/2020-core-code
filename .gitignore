@@ -1,0 +1,10 @@
+#GCC outputs
+*.o
+*.so
+
+#Javac output
+*.class
+*.jar
+
+#JetBrains IDE junk
+.idea
