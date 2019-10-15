@@ -1,10 +1,10 @@
-#GCC outputs
+# GCC outputs
 *.o
 *.so
 
-#Javac output
-*.class
-*.jar
+# object directory and scratch directory
+obj/
+tmp/
 
-#JetBrains IDE junk
+# JetBrains IDE junk
 .idea
