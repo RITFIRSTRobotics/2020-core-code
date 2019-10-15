@@ -8,3 +8,6 @@ tmp/
 
 # JetBrains IDE junk
 .idea
+
+# Valgrind outputs
+massif.out.*
