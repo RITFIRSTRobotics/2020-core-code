@@ -5,6 +5,8 @@
  *
  * @author Connor Henley, @thatging3rkid
  */
+#ifndef __CORE_NETWORKING_ROBOTDATA
+#define __CORE_NETWORKING_ROBOTDATA
 #include "core/network/constants.h"
 
 /****************************** InitData ******************************/
@@ -89,3 +91,4 @@ ControllerData* rd_to_ControllerData(RobotData* data);
 byte* RobotData_to_bytes(RobotData* rd);
 RobotData* bytes_to_RobotData(byte* bytes);
 
+#endif
