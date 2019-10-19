@@ -6,7 +6,7 @@
  * @author Connor Henley, @thatging3rkid
  */
 #ifndef _LOCAL_HEADER
-    #error "This code should not be run outside of testing"
+    #error "This code should not be run outside of testing\n"
 #endif
 
 #include <stdio.h>
@@ -54,6 +54,38 @@ int main() {
 
     // clean up list
     list_free(list);
+
+    /*
+     * Do some error testing
+     */
+
+    // error-handling: try to remove something from an empty list
+    list = list_init(); // make a new list
+    void* e = list_remove(list, 0);
+    if (e != NULL || list->err != LIST_BOUNDS) {
+        fprintf(stderr, "error: incorrect error code (result=%p, list->err=%u)\n", e, list->err);
+        return EXIT_FAILURE;
+    }
+    list_free(list); // cleanup 
+
+    // error-handling: try to remove something out-of-bounds
+    list = list_init(); // make a new list
+    list_add(list, (void*) 1);
+    e = list_remove(list, 1);
+    if (e != NULL || list->err != LIST_BOUNDS) {
+        fprintf(stderr, "error: incorrect error code (result=%p, list->err=%u)\n", e, list->err);
+        return EXIT_FAILURE;
+    }
+    list_free(list); // cleanup
+
+    // error-handling: add to an invalid position
+    list = list_init(); // make a new list
+    ListError_t result = list_add_pos(list, 1, (void*) 1);
+    if (result != LIST_BOUNDS) {
+        fprintf(stderr, "error: incorrect error code (result=%u)\n", result);
+        return EXIT_FAILURE;
+    }
+    list_free(list); // cleanup
 
     /*
      * Test the list_add_pos(...) function by putting data into the list as position 0

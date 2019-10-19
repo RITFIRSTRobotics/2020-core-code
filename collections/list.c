@@ -62,7 +62,7 @@ ListError_t list_add(List_t* list, void* element) {
  */
 ListError_t list_add_pos(List_t* list, uint32_t pos, void* element) {
     // First, do a bounds check
-    if ((list->len + 1) < pos) {
+    if (list->len < pos) {
         list->err = LIST_BOUNDS;
         return list->err;
     }
@@ -107,7 +107,7 @@ ListError_t list_add_pos(List_t* list, uint32_t pos, void* element) {
  */
 void* list_get(List_t* list, uint32_t pos) {
     // First, do a bounds check
-    if ((list->len + 1) < pos) {
+    if (list->len == 0 || (list->len - 1) < pos) {
         list->err = LIST_BOUNDS;
         return NULL;
     }
@@ -120,7 +120,7 @@ void* list_get(List_t* list, uint32_t pos) {
  */
 void* list_remove(List_t* list, uint32_t pos) {
     // First, do a bounds check
-    if ((list->len + 1) < pos) {
+    if (list->len == 0 || (list->len - 1) < pos) {
         list->err = LIST_BOUNDS;
         return NULL;
     }

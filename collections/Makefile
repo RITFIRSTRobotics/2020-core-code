@@ -15,6 +15,7 @@ $(OBJ_DIR)/list.o: list.c list.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 test: list.c ../test/test-list.c list.h
+	@mkdir -p $(TEST_OBJ_DIR)
 	$(CC) $(TESTFLAGS) -c -o $(TEST_OBJ_DIR)/list.o $<
 	@mkdir -p ../tmp
 	$(CC) $(TESTFLAGS) $(TEST_OBJ_DIR)/list.o ../test/test-list.c -o ../tmp/test-list
