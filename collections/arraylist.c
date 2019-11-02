@@ -11,8 +11,10 @@
 
 // do some preprocessor voodoo
 #ifdef _LOCAL_HEADER
+    #include "list.h"
     #include "arraylist.h"
 #else
+    #include "core/collections/list.h"
     #include "core/collections/arraylist.h"
 #endif
 

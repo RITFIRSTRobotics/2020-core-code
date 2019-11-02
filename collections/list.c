@@ -80,7 +80,7 @@ void* list_remove(List_t* list, uint32_t pos) {
     if (list->impl == LIST_ARRAY) {
         return arraylist_remove((ArrayList_t*) list, pos);
     } else if (list->impl == LIST_LINKED) {
-        return linkedlist_remove((LinkedList_t*) list, pos);
+        return linkedlist_remove_pos((LinkedList_t*) list, pos);
     } else {
         list->err = LIST_INVALID_IMPL;
         return NULL;

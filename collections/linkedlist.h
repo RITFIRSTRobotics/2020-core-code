@@ -14,10 +14,11 @@
     #include "core/collections/list.h"
 #endif
 
-// Linked list node structure (single link)
+// Linked list node structure (double link)
 typedef struct LinkedListNode {
     void* data;
     struct LinkedListNode* next;
+    struct LinkedListNode* prev;
 } LinkedListNode_t;
 
 // Linked list structure "extends" List_t
@@ -81,14 +82,32 @@ ListError_t linkedlist_add_pos(LinkedList_t* list, uint32_t pos, void* element);
 void* linkedlist_get(LinkedList_t* list, uint32_t pos);
 
 /**
- * Remove an item from the linked list
+ * Remove an item from the front of the linked list
+ *
+ * @param list the linked list data structure
+ * @return the element that was removed from the list
+ * @error err is set to LIST_BOUNDS if the list is empty
+ */
+void* linkedlist_remove_front(LinkedList_t* list);
+
+/**
+ * Remove an item from the back of the linked list
+ *
+ * @param list the linked list data structure
+ * @return the element that was removed from the list
+ * @error err is set to LIST_BOUNDS if the list is empty
+ */
+void* linkedlist_remove_back(LinkedList_t* list);
+
+/**
+ * Remove an item from the linked list in any position
  *
  * @param list the linked list data structure
  * @param pos the position of the element to remove
  * @return the element that was removed from the list
  * @error err is set to LIST_BOUNDS if pos is out of bounds
  */
-void* linkedlist_remove(LinkedList_t* list, uint32_t pos);
+void* linkedlist_remove_pos(LinkedList_t* list, uint32_t pos);
 
 /**
  * Get the size of the linked list (number of elements)
