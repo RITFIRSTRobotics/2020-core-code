@@ -1,7 +1,7 @@
 /*
  * core/collections/list.h
  *
- * An abstract list implementation
+ * A generic list wrapper, can be instantiated as a linked or array list
  *
  * @author Connor Henley, @thatging3rkid
  */
@@ -9,41 +9,37 @@
 #define __CORE_COLLECTION_LIST
 #include <stdint.h>
 
-#define DEFAULT_LIST_LENGTH 10
-#define DEFAULT_LIST_STEP   25
-
 // Error enumeration
 typedef enum ListError {
-    LIST_OKAY   = 0,
-    LIST_BOUNDS = 0x1000,
-    LIST_MEMORY = 0x1001
+    LIST_OKAY          = 0,
+    LIST_BOUNDS        = 0x1000,
+    LIST_MEMORY        = 0x1001,
+    LIST_INVALID_IMPL  = 0x1002,
+    LIST_INVALID_STATE = 0x1003,
+    LIST_UNSUPPORTED   = 0x1004
 } ListError_t;
 
-// List structure
+// List implementation enumeration
+typedef enum ListImplementation {
+    LIST_ARRAY  = 0,
+    LIST_LINKED = 0x01
+} ListImplementation_t;
+
+// "Abstract" list structure
 typedef struct List {
-    uint32_t len;
-    uint32_t raw_len;
+    enum ListImplementation impl;
     enum ListError err;
-    // 32-bit pad, could be used in the future
-    void** array; 
+    // abstract: add more below here
 } List_t;
 
 /**
  * Initialize a list with the default list length
  *
+ * @param impl the list implementation to use
  * @return the list data structure (or NULL if an error occurred)
  * @error returns NULL if error occurred
  */
-List_t* list_init();
-
-/**
- * Initialize a list with a given list length
- *
- * @param init_len the initial list length
- * @return the list data structure (or NULL if an error occurred)
- * @error returns NULL if error occurred
- */
-List_t* list_init_len(uint32_t init_len);
+List_t* list_init(ListImplementation_t impl);
 
 /**
  * Add an item to the end of the list
