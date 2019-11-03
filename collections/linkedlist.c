@@ -214,6 +214,9 @@ void* linkedlist_remove_front(LinkedList_t* list) {
     LinkedListNode_t* remove = list->first;
     void* data = remove->data;
     list->first = remove->next;
+    if (remove->next == NULL) {
+        list->last = NULL;
+    }
     _destroy_llnode(remove, true);
     return data;
 }
@@ -232,6 +235,9 @@ void* linkedlist_remove_back(LinkedList_t* list) {
     LinkedListNode_t* remove = list->last;
     void* data = remove->data;
     list->last = remove->prev;
+    if (remove->prev == NULL) {
+        list->first = NULL;
+    }
     _destroy_llnode(remove, true);
     return data;
 }
@@ -243,7 +249,7 @@ void* linkedlist_remove_back(LinkedList_t* list) {
 void* linkedlist_remove_pos(LinkedList_t* list, uint32_t pos) {
     // First, do a bounds check
     uint32_t size = linkedlist_size(list);
-    if (size < pos) {
+    if (size <= pos) {
         list->err = LIST_BOUNDS;
         return NULL;
     }
