@@ -137,7 +137,7 @@ int t04_arraylist_add_pos_0() {
     
     // size check
     uint32_t size = list_size(list);
-    if (size != 4) {
+    if (size != 4 || list->err != LIST_OKAY) {
         print_dbgdata(list);
         fprintf(stderr, "error: incorrect size %u\n", size);
         return EXIT_FAILURE;
@@ -162,7 +162,7 @@ int t04_arraylist_add_pos_0() {
  * The basics have been tested at this point, time to do some strenuous testing
  * Make an array of FULL_TEST_ITEMS, add all those items to a list, remove every other, then clean up
  */
-t05_strain_test(ListImplementation_t type, size_t elements) {
+int t05_strain_test(ListImplementation_t type, size_t elements) {
     // make the array
     uintptr_t items[elements];
     for (size_t i = 0; i < elements; i += 1) {
@@ -178,7 +178,7 @@ t05_strain_test(ListImplementation_t type, size_t elements) {
     // remove every-other
     for (size_t i = 0; i < (elements / 2); i += 1) {
         uintptr_t e = (uintptr_t) list_remove(list, i);
-        if (e % 2 != 0) {
+        if ((e % 2 != 0) || list->err != LIST_OKAY) {
             print_dbgdata(list);
             fprintf(stderr, "error: at i=%lu incorrect value removed %lu\n", i, e);
             return EXIT_FAILURE;
@@ -188,7 +188,7 @@ t05_strain_test(ListImplementation_t type, size_t elements) {
     // make sure the rest of the values are odd
     for (size_t i = 0; i < (elements / 2); i += 1) {
         uintptr_t e = (uintptr_t) list_get(list, i);
-        if (e % 2 != 1) {
+        if ((e % 2 != 1) || list->err != LIST_OKAY) {
             print_dbgdata(list);
             fprintf(stderr, "error: at i=%lu incorrect value removed %lu\n", i, e);
             return EXIT_FAILURE;
@@ -200,6 +200,13 @@ t05_strain_test(ListImplementation_t type, size_t elements) {
     return 0;
 }
 
+int t06_linkedlist_frontback_tests() {
+    //
+        
+
+
+    return 0;
+}
 
 int main() {
 
