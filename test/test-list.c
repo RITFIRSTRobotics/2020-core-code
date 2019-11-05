@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <memory.h>
 
 #include "../collections/list.h"
 #include "../collections/arraylist.h"
@@ -225,6 +226,13 @@ int t06_linkedlist_frontback_tests(uint32_t num_items) {
             }
         }
 
+        uint32_t size = linkedlist_size(list);
+        if (size != num_items) {
+            print_dbgdata(list);
+            fprintf(stderr, "list size incorrect, got %u\n", size);
+            return TEST_FAILURE;
+        }
+
         // Remove items from the list and place them into an array
         uint32_t values[num_items];
         for (uint32_t i = 0; i < num_items; i += 1) {
@@ -249,7 +257,7 @@ int t06_linkedlist_frontback_tests(uint32_t num_items) {
         if (mode == 0 || mode == 3) {
             uint32_t tmp[num_items];
             memcpy(tmp, values, sizeof(uint32_t) * num_items);
-            for (int i = 0; i < num_items; i += 1) {
+            for (uint32_t i = 0; i < num_items; i += 1) {
                 values[i] = tmp[num_items - i - 1];
             }
         }
@@ -295,11 +303,10 @@ int main() {
         if (type == LIST_ARRAY) {
             error += t04_arraylist_add_pos_0(); // only run once, since it's an array list only test
         } else if (type == LIST_LINKED) {
-            for (int j = 2; j < 8; j += 1) {
+            for (int j = 1; j < 10; j += 1) {
                 error += t06_linkedlist_frontback_tests((uint32_t) j);
             }
         }
-        
     }
 
     // Tests finished, handle the error code
