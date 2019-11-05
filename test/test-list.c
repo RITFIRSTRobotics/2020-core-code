@@ -17,6 +17,9 @@
 #include "../collections/arraylist.h"
 #include "../collections/linkedlist.h"
 
+#define TEST_SUCCESS 0
+#define TEST_FAILURE 1
+
 #define FULL_TEST_ITEMS 2048
 
 /**
@@ -49,7 +52,7 @@ int t01_creation(ListImplementation_t type) {
     List_t* list = list_init(type);
     list_free(list);
 
-    return 0;
+    return TEST_SUCCESS;
 }
 
 /*
@@ -68,7 +71,7 @@ int t02_basic_tests(ListImplementation_t type) {
     if (size != 4) {
         print_dbgdata(list);
         fprintf(stderr, "error: incorrect size %u (type=%u)\n", size, type);
-        return EXIT_FAILURE;
+        return TEST_FAILURE;
     }
 
     // start removing things
@@ -77,13 +80,13 @@ int t02_basic_tests(ListImplementation_t type) {
         if (e != i) {
             print_dbgdata(list);
             fprintf(stderr, "error: at i=%lu incorrect value removed %lu\n", i, e);
-            return EXIT_FAILURE;
+            return TEST_FAILURE;
         }
     }
 
     // clean up list
     list_free(list);
-    return 0;
+    return TEST_SUCCESS;
 }
 
 /*
@@ -96,7 +99,7 @@ int t03_basic_error_handling(ListImplementation_t type) {
     if (e != NULL || list->err != LIST_BOUNDS) {
         print_dbgdata(list);
         fprintf(stderr, "error: incorrect error code (result=%p)\n", e);
-        return EXIT_FAILURE;
+        return TEST_FAILURE;
     }
     list_free(list); // cleanup 
 
@@ -107,7 +110,7 @@ int t03_basic_error_handling(ListImplementation_t type) {
     if (e != NULL || list->err != LIST_BOUNDS) {
         print_dbgdata(list);
         fprintf(stderr, "error: incorrect error code (result=%p)\n", e);
-        return EXIT_FAILURE;
+        return TEST_FAILURE;
     }
     list_free(list); // cleanup
 
@@ -117,11 +120,11 @@ int t03_basic_error_handling(ListImplementation_t type) {
     if (result != LIST_BOUNDS) {
         print_dbgdata(list);
         fprintf(stderr, "error: incorrect error code (result=%u)\n", result);
-        return EXIT_FAILURE;
+        return TEST_FAILURE;
     }
     
     list_free(list); // cleanup
-    return 0;
+    return TEST_SUCCESS;
 }
 
 /*
@@ -140,7 +143,7 @@ int t04_arraylist_add_pos_0() {
     if (size != 4 || list->err != LIST_OKAY) {
         print_dbgdata(list);
         fprintf(stderr, "error: incorrect size %u\n", size);
-        return EXIT_FAILURE;
+        return TEST_FAILURE;
     }
     
     // start removing things
@@ -149,13 +152,13 @@ int t04_arraylist_add_pos_0() {
         if (e != (i + 1) || list->err != LIST_OKAY) {
             print_dbgdata(list);
             fprintf(stderr, "error: at i=%lu incorrect value removed %lu\n", i, e);
-            return EXIT_FAILURE;
+            return TEST_FAILURE;
         }
     }
     
     // clean up list
     list_free(list);
-    return 0;
+    return TEST_SUCCESS;
 }
 
 /*
@@ -181,7 +184,7 @@ int t05_strain_test(ListImplementation_t type, size_t elements) {
         if ((e % 2 != 0) || list->err != LIST_OKAY) {
             print_dbgdata(list);
             fprintf(stderr, "error: at i=%lu incorrect value removed %lu\n", i, e);
-            return EXIT_FAILURE;
+            return TEST_FAILURE;
         }
     }
     
@@ -191,43 +194,120 @@ int t05_strain_test(ListImplementation_t type, size_t elements) {
         if ((e % 2 != 1) || list->err != LIST_OKAY) {
             print_dbgdata(list);
             fprintf(stderr, "error: at i=%lu incorrect value removed %lu\n", i, e);
-            return EXIT_FAILURE;
+            return TEST_FAILURE;
         }
     }
     
     // clean up
     list_free(list);
-    return 0;
+    return TEST_SUCCESS;
 }
 
-int t06_linkedlist_frontback_tests() {
-    //
-        
+int t06_linkedlist_frontback_tests(uint32_t num_items) {
+    // Run all the cases where data is inserted/removed fron the front/back of the list
+    for (uint32_t mode = 0; mode < 4; mode += 1) {
+        LinkedList_t* list = linkedlist_init();
 
+        // Add items to the list
+        for (uintptr_t data = 1; data < (num_items + 1); data += 1) {
+            // Add the data
+            if ((mode & 0x01) == 0) {
+                linkedlist_add_front(list, (void*) data);
+            } else if ((mode & 0x01) == 0x01) {
+                linkedlist_add_back(list, (void*) data);
+            }
 
-    return 0;
+            // Make sure the list is okay
+            if (list->err != LIST_OKAY) {
+                print_dbgdata(list);
+                fprintf(stderr, "list not OKAY (mode=0x%0x, data=%u)\n", mode, (uint32_t) data);
+                return TEST_FAILURE;
+            }
+        }
+
+        // Remove items from the list and place them into an array
+        uint32_t values[num_items];
+        for (uint32_t i = 0; i < num_items; i += 1) {
+            // Remove the data
+            uintptr_t e = 0;
+            if ((mode & 0x02) == 0) {
+                e = (uintptr_t) linkedlist_remove_front(list);
+            } else if ((mode & 0x02) == 0x02) {
+                e = (uintptr_t) linkedlist_remove_back(list);
+            }
+            values[i] = (uint32_t) e;
+
+            // Make sure the list is okay
+            if (list->err != LIST_OKAY) {
+                print_dbgdata(list);
+                fprintf(stderr, "list not OKAY (mode=0x%0x, data=%u)\n", mode, (uint32_t) e);
+                return TEST_FAILURE;
+            }
+        }
+
+        // Reverse the output array if this is a front/front or rear/rear
+        if (mode == 0 || mode == 3) {
+            uint32_t tmp[num_items];
+            memcpy(tmp, values, sizeof(uint32_t) * num_items);
+            for (int i = 0; i < num_items; i += 1) {
+                values[i] = tmp[num_items - i - 1];
+            }
+        }
+
+        // Finally, make sure the array is right
+        for (uint32_t i = 0; i < num_items; i += 1) {
+            uint32_t j = values[i];
+            if ((j - 1) != i) {
+                print_dbgdata(list);
+                fprintf(stderr, "incorrect value removed (j=%u, i=%u, mode=0x%0x, num_items=%u)\n", j, i, mode, num_items);
+                return TEST_FAILURE;
+            }
+        }       
+
+        linkedlist_free(list);
+    }
+
+    return TEST_SUCCESS;
 }
 
+/**
+ * Code entry point
+ *
+ * Should run all the given tests
+ */
 int main() {
-
     // Run tests on both types of list
+    int error = 0;
     ListImplementation_t types[] = {LIST_ARRAY, LIST_LINKED};
     for (size_t i = 0; i < num_elements(types); i += 1) {
 
         ListImplementation_t type = types[i];
 
-        t01_creation(type);
-        t02_basic_tests(type);
-        t03_basic_error_handling(type);
+        // Run the simple tests first and accumlate the error
+        error += t01_creation(type);
+        error += t02_basic_tests(type);
+        error += t03_basic_error_handling(type);
 
+        // Run the complex/strain tests, accumulating the same error value
+        error += t05_strain_test(type, FULL_TEST_ITEMS);
+
+        // Run custom tests, continuing to accumulate the error value
         if (type == LIST_ARRAY) {
-            t04_arraylist_add_pos_0(); // only run once, since it's an array list only test
+            error += t04_arraylist_add_pos_0(); // only run once, since it's an array list only test
+        } else if (type == LIST_LINKED) {
+            for (int j = 2; j < 8; j += 1) {
+                error += t06_linkedlist_frontback_tests((uint32_t) j);
+            }
         }
-
-        t05_strain_test(type, FULL_TEST_ITEMS);
+        
     }
 
-    // finished
-    printf("success!\n");
-    return EXIT_SUCCESS;
+    // Tests finished, handle the error code
+    if (error == 0) {
+        printf("success!\n");
+        return EXIT_SUCCESS;
+    } else {
+        printf("^^^ test errors\n");
+        return EXIT_FAILURE;
+    }
 }
