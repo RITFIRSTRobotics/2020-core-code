@@ -23,6 +23,7 @@ typedef struct ArrayList {
     // "inherited"
     enum ListImplementation impl;
     enum ListError err;
+    pthread_mutex_t mutex;
 
     // Array list specific
     uint32_t len; // length of the array in elements

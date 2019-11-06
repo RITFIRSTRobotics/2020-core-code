@@ -5,9 +5,11 @@
  *
  * @author Connor Henley, @thatging3rkid
  */
+#define _GNU_SOURCE // required for pthread mutex attributes
 #include <stdint.h>
 #include <stdlib.h>
 #include <memory.h>
+#include <pthread.h>
 #include <stdbool.h>
 
 // do some preprocessor voodoo
@@ -39,6 +41,7 @@ static LinkedListNode_t* _create_llnode(void* data, LinkedListNode_t* next, Link
     res->data = data;
     res->next = next;
     res->prev = prev;
+
     return res;
 }
 
@@ -82,6 +85,12 @@ LinkedList_t* linkedlist_init() {
     res->first = NULL;
     res->last = NULL;
 
+    // Initialize the mutex
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&res->mutex, &attr);
+
     return res;    
 }
 
@@ -89,11 +98,15 @@ LinkedList_t* linkedlist_init() {
  * @inherit
  */
 ListError_t linkedlist_add_front(LinkedList_t* list, void* element) {
+    // First, lock the list
+    pthread_mutex_lock(&list->mutex);
+    
     // Create a node and populate it
     LinkedListNode_t* new = _create_llnode(element, list->first, NULL);
     if (new == NULL) {
         list->err = LIST_MEMORY;
-        return list->err;
+        pthread_mutex_unlock(&list->mutex);
+        return LIST_MEMORY;
     }
 
     // See if the list is empty or not
@@ -105,9 +118,10 @@ ListError_t linkedlist_add_front(LinkedList_t* list, void* element) {
         list->first->prev = new;
     }
 
-    // Update the data structure
+    // Update the list, then unlock it
     list->first = new;
-
+    pthread_mutex_unlock(&list->mutex);
+    
     return LIST_OKAY;
 }
 
@@ -115,11 +129,15 @@ ListError_t linkedlist_add_front(LinkedList_t* list, void* element) {
  * @inherit
  */
 ListError_t linkedlist_add_back(LinkedList_t* list, void* element) {
+    // First, lock the list
+    pthread_mutex_lock(&list->mutex);
+
     // Create a new node and populate it
     LinkedListNode_t* new = _create_llnode(element, NULL, list->last);
     if (new == NULL) {
         list->err = LIST_MEMORY;
-        return list->err;
+        pthread_mutex_unlock(&list->mutex);
+        return LIST_MEMORY;
     }
 
     // See if the list is empty or not
@@ -131,8 +149,9 @@ ListError_t linkedlist_add_back(LinkedList_t* list, void* element) {
         list->last->next = new;
     }
     
-    // Update the data structure
+    // Update the list, then unlock it
     list->last = new;
+    pthread_mutex_unlock(&list->mutex);
     
     return LIST_OKAY;
 }
@@ -141,18 +160,26 @@ ListError_t linkedlist_add_back(LinkedList_t* list, void* element) {
  * @inherit
  */
 ListError_t linkedlist_add_pos(LinkedList_t* list, uint32_t pos, void* element) {
-    // First, do a bounds check
+    // First, lock the list
+    pthread_mutex_lock(&list->mutex);
+
+    // Next, do a bounds check
     uint32_t size = linkedlist_size(list);
     if (size < pos) {
         list->err = LIST_BOUNDS;
-        return list->err;
+        pthread_mutex_unlock(&list->mutex);
+        return LIST_BOUNDS;
     }
 
     // Use other methods if adding to the front of back of the list
     if (pos == 0) {
-        return linkedlist_add_front(list, element);
+        ListError_t err = linkedlist_add_front(list, element);
+        pthread_mutex_unlock(&list->mutex);
+        return err;
     } else if (pos == size) {
-        return linkedlist_add_back(list, element);
+        ListError_t err = linkedlist_add_back(list, element);
+        pthread_mutex_unlock(&list->mutex);
+        return err;
     }  
 
     // Pick the two neighboring nodes
@@ -176,6 +203,9 @@ ListError_t linkedlist_add_pos(LinkedList_t* list, uint32_t pos, void* element) 
     left->next = new;    
     right->next = new;
 
+    // Unlock the list
+    pthread_mutex_unlock(&list->mutex);
+
     return LIST_OKAY;
 }
 
@@ -183,30 +213,37 @@ ListError_t linkedlist_add_pos(LinkedList_t* list, uint32_t pos, void* element) 
  * @inherit
  */
 void* linkedlist_get(LinkedList_t* list, uint32_t pos) {
-    uint32_t count = 0;
-    LinkedListNode_t* node = list->first;
+    // First, lock the list
+    pthread_mutex_lock(&list->mutex);
 
     // Iterate over all nodes
+    uint32_t count = 0;
+    LinkedListNode_t* node = list->first;    
     while (node != NULL && count < pos) {
         node = node->next;
         count += 1;
     }
 
     // Check to see if the node was found
-    if (node == NULL) {
-        return NULL;
-    } else {
-        return node->data;
+    void* result = NULL;
+    if (node != NULL) {
+       result = node->data;
     }
+    pthread_mutex_unlock(&list->mutex);
+    return result;
 }
 
 /**
  * @inherit
  */
 void* linkedlist_remove_front(LinkedList_t* list) {
+    // First, lock the list
+    pthread_mutex_lock(&list->mutex);
+
     // Make sure the list is not empty
     if (list->first == NULL || list->last == NULL) {
         list->err = LIST_BOUNDS;
+        pthread_mutex_unlock(&list->mutex);
         return NULL;
     }
 
@@ -218,6 +255,7 @@ void* linkedlist_remove_front(LinkedList_t* list) {
         list->last = NULL;
     }
     _destroy_llnode(remove, true);
+    pthread_mutex_unlock(&list->mutex);
     return data;
 }
 
@@ -225,9 +263,13 @@ void* linkedlist_remove_front(LinkedList_t* list) {
  *
  */
 void* linkedlist_remove_back(LinkedList_t* list) {
+    // First, lock the list
+    pthread_mutex_lock(&list->mutex);
+
     // Make sure the list is not empty
     if (list->first == NULL || list->last == NULL) {
         list->err = LIST_BOUNDS;
+        pthread_mutex_unlock(&list->mutex);
         return NULL;
     }
 
@@ -239,6 +281,7 @@ void* linkedlist_remove_back(LinkedList_t* list) {
         list->first = NULL;
     }
     _destroy_llnode(remove, true);
+    pthread_mutex_unlock(&list->mutex);
     return data;
 }
 
@@ -247,18 +290,26 @@ void* linkedlist_remove_back(LinkedList_t* list) {
  * @inherit
  */
 void* linkedlist_remove_pos(LinkedList_t* list, uint32_t pos) {
+    // First, lock the list
+    pthread_mutex_lock(&list->mutex);
+    
     // First, do a bounds check
     uint32_t size = linkedlist_size(list);
     if (size <= pos) {
         list->err = LIST_BOUNDS;
+        pthread_mutex_unlock(&list->mutex);
         return NULL;
     }
 
     // Use other methods if adding to the front of back of the list
     if (pos == 0) {
-        return linkedlist_remove_front(list);
+        void* result = linkedlist_remove_front(list);
+        pthread_mutex_unlock(&list->mutex);
+        return result;
     } else if (pos == size) {
-        return linkedlist_remove_back(list);
+        void* result = linkedlist_remove_back(list);
+        pthread_mutex_unlock(&list->mutex);
+        return result;
     }
 
     // Find the afflicted node
@@ -275,6 +326,7 @@ void* linkedlist_remove_pos(LinkedList_t* list, uint32_t pos) {
     if (left == NULL || right == NULL) {
         // At least one neighbor is missing, remove_front or remove_back should have been used
         list->err = LIST_INVALID_STATE;
+        pthread_mutex_unlock(&list->mutex);
         return NULL;
     }
 
@@ -283,7 +335,8 @@ void* linkedlist_remove_pos(LinkedList_t* list, uint32_t pos) {
     _destroy_llnode(remove, true);
     left->next = right;
     right->prev = left;
-
+    pthread_mutex_unlock(&list->mutex);
+    
     return data;
 }
 
@@ -291,6 +344,9 @@ void* linkedlist_remove_pos(LinkedList_t* list, uint32_t pos) {
  * @inherit
  */
 uint32_t linkedlist_size(LinkedList_t* list) {
+    // First, lock the list
+    pthread_mutex_lock(&list->mutex);
+    
     uint32_t count = 0;
     LinkedListNode_t* node = list->first;
 
@@ -300,6 +356,9 @@ uint32_t linkedlist_size(LinkedList_t* list) {
         count += 1;
     }
 
+    // Unlock the list
+    pthread_mutex_unlock(&list->mutex);
+    
     return count;
 }
 
@@ -318,6 +377,9 @@ void linkedlist_free(LinkedList_t* list) {
             cur = next;
         }
     }
+
+    // Clean up the mutex
+    pthread_mutex_destroy(&list->mutex);
     
     // Clean up the data structure
     free(list);

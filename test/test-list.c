@@ -9,10 +9,14 @@
     #error "This code should not be run outside of testing\n"
 #endif
 
+#define _DEFAULT_SOURCE
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <memory.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <stdbool.h>
 
 #include "../collections/list.h"
 #include "../collections/arraylist.h"
@@ -22,6 +26,17 @@
 #define TEST_FAILURE 1
 
 #define FULL_TEST_ITEMS 2048
+
+// Struct passed to threads
+typedef struct {
+    bool stop;
+    uint32_t count;
+
+    List_t* list;
+    uint32_t* array;
+} ThreadData;
+
+#define THREAD_TEST_ITEMS 2048
 
 /**
  * Returns the number of elements in a static array
@@ -204,6 +219,9 @@ int t05_strain_test(ListImplementation_t type, size_t elements) {
     return TEST_SUCCESS;
 }
 
+/**
+ * Test all the add/remove functions of the linked list
+ */
 int t06_linkedlist_frontback_tests(uint32_t num_items) {
     // Run all the cases where data is inserted/removed fron the front/back of the list
     for (uint32_t mode = 0; mode < 4; mode += 1) {
@@ -279,6 +297,130 @@ int t06_linkedlist_frontback_tests(uint32_t num_items) {
 }
 
 /**
+ * Producer thread
+ */
+void* t07_producer(void* vargp) {
+    // Generate data for the list, add it, save it for later, then sleep for a bit
+    ThreadData* data = (ThreadData*) vargp;
+    for (data->count = 0; data->count < THREAD_TEST_ITEMS; data->count += 1) {
+        uintptr_t e = data->count + 1;
+        list_add(data->list, (void*) e);
+        if (data->list->err != LIST_OKAY) {
+            fprintf(stderr, "err=0x%0x\n", data->list->err);
+            return (void*) (TEST_FAILURE << 1);
+        }
+
+        data->array[data->count] = e;
+        usleep(250);
+    }
+
+    return TEST_SUCCESS;
+}
+
+/**
+ * Consumer thread
+ */
+void* t07_consumer(void* vargp) {
+    // Try to remove any new entry from the list
+    ThreadData* data = (ThreadData*) vargp;
+    while (true) {
+        if (list_size(data->list) > 0) {
+            // Remove data from the front of the list and make sure it succeeded
+            uintptr_t e = (uintptr_t) list_remove(data->list, 0);
+            if (data->list->err != LIST_OKAY) {
+                fprintf(stderr, "err=0x%0x\n", data->list->err);
+                return (void*) (TEST_FAILURE << 1);
+            }
+
+            // Put the data in the output array
+            data->array[data->count] = (uint32_t) e;
+            data->count += 1;
+
+            // Stop reading data once we reach the threshold
+            if (data->count >= THREAD_TEST_ITEMS) {
+                break;
+            }
+        } else {
+            usleep(250);
+        }
+
+        // Stop if the main thread tells us to
+        if (data->stop) {
+            return (void*) TEST_FAILURE;
+        }
+    }
+
+    return TEST_SUCCESS;
+}
+
+/**
+ * Test to see if the list is thread-safe by starting a producer and comsumer thread
+ */
+int t07_threadsafe_test(ListImplementation_t type) {
+    List_t* list = list_init(type);
+
+    // Build thread parameters for the producer
+    ThreadData* pdata = malloc(sizeof(ThreadData));
+    pdata->stop = false;
+    pdata->count = 0;
+    pdata->list = list;
+    pdata->array = malloc(sizeof(uint32_t) * THREAD_TEST_ITEMS);
+
+    // Build thread parameters for the consumer
+    ThreadData* cdata = malloc(sizeof(ThreadData));
+    cdata->stop = false;
+    cdata->count = 0;
+    cdata->list = list;
+    cdata->array = malloc(2 * sizeof(uint32_t) * THREAD_TEST_ITEMS); // give extra memory
+
+    // Make the threads and start them
+    pthread_t pthread;
+    pthread_t cthread;
+    pthread_create(&pthread, NULL, t07_producer, pdata);
+    pthread_create(&cthread, NULL, t07_consumer, cdata);
+
+    // Wait for the producer to finish and get it's return value, sleep, then tell the consumer to stop and get it's return value
+    uint32_t presult;
+    pthread_join(pthread, (void**) &presult);
+    usleep(50000);
+    cdata->stop = true;
+    uint32_t cresult;
+    pthread_join(cthread, (void**) &cresult);
+
+    // Stop now if there were any problems
+    bool err = false;
+    if (presult != TEST_SUCCESS || cresult != TEST_SUCCESS) {
+        print_dbgdata(list);
+        fprintf(stderr, "thread returned failure (p=%u, c=%u)\n", presult, cresult);
+        err = true;
+    }
+
+    // Test the resulting arrays if there isn't an error already
+    if (!err) {
+        for (size_t i = 0; i < THREAD_TEST_ITEMS; i += 1) {
+            if (pdata->array[i] != cdata->array[i]) {
+                print_dbgdata(list);
+                fprintf(stderr, "value mismatch (p=%u, c=%u)\n", pdata->array[i], cdata->array[i]);
+                err = true;
+                break;
+            }
+        }
+    }
+
+    // Clean up the memory we used
+    free(pdata->array);
+    free(pdata);
+    pdata = NULL;
+    free(cdata->array);
+    free(cdata);
+    cdata = NULL;
+    list_free(list);
+    
+    return (err)? TEST_FAILURE : TEST_SUCCESS;
+}
+
+
+/**
  * Code entry point
  *
  * Should run all the given tests
@@ -298,6 +440,7 @@ int main() {
 
         // Run the complex/strain tests, accumulating the same error value
         error += t05_strain_test(type, FULL_TEST_ITEMS);
+        error += t07_threadsafe_test(type);
 
         // Run custom tests, continuing to accumulate the error value
         if (type == LIST_ARRAY) {

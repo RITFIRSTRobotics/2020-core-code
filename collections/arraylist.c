@@ -5,9 +5,11 @@
  *
  * @author Connor Henley, @thatging3rkid
  */
+#define _GNU_SOURCE // required for pthread mutex attributes
 #include <stdint.h>
 #include <stdlib.h>
 #include <memory.h>
+#include <pthread.h>
 
 // do some preprocessor voodoo
 #ifdef _LOCAL_HEADER
@@ -41,6 +43,12 @@ ArrayList_t* arraylist_init_len(uint32_t init_len) {
     res->len = 0;
     res->allocated = init_len;
 
+    // Initialize the mutex
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&res->mutex, &attr);
+
     // Ask for array memory and make sure it was allocated
     res->array = malloc(sizeof(void*) * res->allocated);
     if (res->array == NULL) {
@@ -57,17 +65,25 @@ ArrayList_t* arraylist_init_len(uint32_t init_len) {
  * @inherit
  */
 ListError_t arraylist_add(ArrayList_t* list, void* element) {
-    return arraylist_add_pos(list, list->len, element);
+    // Lock the list (i.e. let any pending operation finish), run the add position, then unlock
+    pthread_mutex_lock(&list->mutex);
+    ListError_t result = arraylist_add_pos(list, list->len, element);
+    pthread_mutex_unlock(&list->mutex);
+    return result;
 }
 
 /**
  * @inherit
  */
 ListError_t arraylist_add_pos(ArrayList_t* list, uint32_t pos, void* element) {
-    // First, do a bounds check
+    // First, lock the list
+    pthread_mutex_lock(&list->mutex);
+
+    // Next, do a bounds check
     if (list->len < pos) {
         list->err = LIST_BOUNDS;
-        return list->err;
+        pthread_mutex_unlock(&list->mutex);
+        return LIST_BOUNDS;
     }
 
     // Next, check to see if we need to reallocate the array
@@ -76,7 +92,8 @@ ListError_t arraylist_add_pos(ArrayList_t* list, uint32_t pos, void* element) {
         void** temp = realloc(list->array, sizeof(void*) * (list->allocated + DEFAULT_LIST_STEP));
         if (temp == NULL) {
             list->err = LIST_MEMORY;
-            return list->err;
+            pthread_mutex_unlock(&list->mutex);
+            return LIST_MEMORY;
         }
 
         // Update the data structure with the new memory
@@ -102,29 +119,43 @@ ListError_t arraylist_add_pos(ArrayList_t* list, uint32_t pos, void* element) {
     list->array[pos] = element;
     list->len += 1;
 
-    return list->err;
+    // Return the lock and return the error code
+    ListError_t tmp = list->err;
+    pthread_mutex_unlock(&list->mutex);
+    return tmp;
 }
 
 /**
  * @inherit
  */
 void* arraylist_get(ArrayList_t* list, uint32_t pos) {
-    // First, do a bounds check
+    // First, lock the list
+    pthread_mutex_lock(&list->mutex);
+
+    // Next, do a bounds check
     if (list->len == 0 || (list->len - 1) < pos) {
         list->err = LIST_BOUNDS;
+        pthread_mutex_unlock(&list->mutex);
         return NULL;
     }
 
-    return list->array[pos];
+    // Get value and unlock list
+    void* e = list->array[pos];
+    pthread_mutex_unlock(&list->mutex);
+    return e;
 }
 
 /**
  * @inherit
  */
 void* arraylist_remove(ArrayList_t* list, uint32_t pos) {
-    // First, do a bounds check
+    // First, lock the list
+    pthread_mutex_lock(&list->mutex);
+
+    // Next, do a bounds check
     if (list->len == 0 || (list->len - 1) < pos) {
         list->err = LIST_BOUNDS;
+        pthread_mutex_unlock(&list->mutex);
         return NULL;
     }
 
@@ -136,8 +167,14 @@ void* arraylist_remove(ArrayList_t* list, uint32_t pos) {
         list->array[i] = list->array[i + 1];
     }
     list->array[list->len - 1] = 0; // clear the last position
-
     list->len -= 1;
+
+    /*
+     * todo: decrease the allocated memory if it gets too big
+     */
+
+    // Unlock the list
+    pthread_mutex_unlock(&list->mutex);
     return res;
 }
 
@@ -145,7 +182,11 @@ void* arraylist_remove(ArrayList_t* list, uint32_t pos) {
  * @inherit
  */
 uint32_t arraylist_size(ArrayList_t* list) {
-    return list->len;
+    // Lock the list (i.e. let any pending operation finish), get the size, then unlock
+    pthread_mutex_lock(&list->mutex);
+    uint32_t len = list->len;
+    pthread_mutex_unlock(&list->mutex);
+    return len;
 }
 
 /**
@@ -154,6 +195,7 @@ uint32_t arraylist_size(ArrayList_t* list) {
 void arraylist_free(ArrayList_t* list) {
     free(list->array);
     list->array = NULL;
+    pthread_mutex_destroy(&list->mutex);
     free(list);
     list = NULL;
 }

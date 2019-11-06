@@ -7,7 +7,9 @@
  */
 #ifndef __CORE_COLLECTION_LIST
 #define __CORE_COLLECTION_LIST
+
 #include <stdint.h>
+#include <pthread.h>
 
 // Error enumeration
 typedef enum ListError {
@@ -29,6 +31,8 @@ typedef enum ListImplementation {
 typedef struct List {
     enum ListImplementation impl;
     enum ListError err;
+    pthread_mutex_t mutex;
+    
     // abstract: add more below here
 } List_t;
 

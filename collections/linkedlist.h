@@ -7,6 +7,9 @@
  */
 #ifndef __CORE_COLLECTION_LINKEDLIST
 
+#include <stdint.h>
+#include <pthread.h>
+
 // do some preprocessor voodoo
 #ifdef _LOCAL_HEADER
     #include "list.h"
@@ -26,6 +29,7 @@ typedef struct LinkedList {
     // "inherited"
     enum ListImplementation impl;
     enum ListError err;
+    pthread_mutex_t mutex;
 
     // Linked list specific
     struct LinkedListNode* first;
