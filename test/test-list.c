@@ -306,7 +306,8 @@ void* t07_producer(void* vargp) {
         uintptr_t e = data->count + 1;
         list_add(data->list, (void*) e);
         if (data->list->err != LIST_OKAY) {
-            fprintf(stderr, "err=0x%0x\n", data->list->err);
+            print_dbgdata(data->list);
+            fprintf(stderr, "list add failed (err=0x%0x)\n", data->list->err);
             return (void*) (TEST_FAILURE << 1);
         }
 
@@ -328,7 +329,8 @@ void* t07_consumer(void* vargp) {
             // Remove data from the front of the list and make sure it succeeded
             uintptr_t e = (uintptr_t) list_remove(data->list, 0);
             if (data->list->err != LIST_OKAY) {
-                fprintf(stderr, "err=0x%0x\n", data->list->err);
+                print_dbgdata(data->list);
+                fprintf(stderr, "list remove failed (err=0x%0x)\n", data->list->err);
                 return (void*) (TEST_FAILURE << 1);
             }
 
