@@ -30,7 +30,7 @@
  * @param prev the previous node in the list
  * @return returns NULL if an error occured
  */
-static LinkedListNode_t* _create_llnode(void* data, LinkedListNode_t* next, LinkedListNode_t* prev) {
+static LinkedListNode_t* _llnode_create(void* data, LinkedListNode_t* next, LinkedListNode_t* prev) {
     // Ask for memory and made sure that it was allocated
     LinkedListNode_t* res = malloc(sizeof(LinkedListNode_t));
     if (res == NULL) {
@@ -46,13 +46,47 @@ static LinkedListNode_t* _create_llnode(void* data, LinkedListNode_t* next, Link
 }
 
 /**
+ * Find the linked list node in a given position
+ *
+ * @private
+ * @param list the list data structure
+ * @param pos the position of the node
+ * @param the pre-calculated size of the list
+ * @note if the size has not been calculated, it is faster to search the list than use this method
+ * @return the node, or NULL if it could not be found
+ */
+static LinkedListNode_t* _llnode_get(LinkedList_t* list, uint32_t pos, uint32_t size) {
+    // Decide whether to search from the front or back
+    LinkedListNode_t* node = NULL;
+    if (pos < (size / 2)) {
+        // Start from the front
+        uint32_t count = 0;
+        node = list->first;
+        while (node != NULL && count < pos) {
+            node = node->next;
+            count += 1;
+        }
+    } else {
+        // Start from the back
+        uint32_t count = size - 1;
+        node = list->last;
+        while (node != NULL && count > pos) {
+            node = node->prev;
+            count -= 1;
+        }
+    }
+
+    return node;
+}
+
+/**
  * Destory a linked list node
  *
  * @private
  * @param node the linked list node to destroy
  * @param refs if true, references to this node in the neighbor nodes will be destroyed
  */
-static void _destroy_llnode(LinkedListNode_t* node, bool refs) {
+static void _llnode_free(LinkedListNode_t* node, bool refs) {
     // Clear the fields of this node and the neighboring nodes if specified
     if (refs && node->next != NULL) {
         node->next->prev = NULL;
@@ -102,7 +136,7 @@ ListError_t linkedlist_add_front(LinkedList_t* list, void* element) {
     pthread_mutex_lock(&list->mutex);
     
     // Create a node and populate it
-    LinkedListNode_t* new = _create_llnode(element, list->first, NULL);
+    LinkedListNode_t* new = _llnode_create(element, list->first, NULL);
     if (new == NULL) {
         list->err = LIST_MEMORY;
         pthread_mutex_unlock(&list->mutex);
@@ -133,7 +167,7 @@ ListError_t linkedlist_add_back(LinkedList_t* list, void* element) {
     pthread_mutex_lock(&list->mutex);
 
     // Create a new node and populate it
-    LinkedListNode_t* new = _create_llnode(element, NULL, list->last);
+    LinkedListNode_t* new = _llnode_create(element, NULL, list->last);
     if (new == NULL) {
         list->err = LIST_MEMORY;
         pthread_mutex_unlock(&list->mutex);
@@ -180,16 +214,11 @@ ListError_t linkedlist_add_pos(LinkedList_t* list, uint32_t pos, void* element) 
         ListError_t err = linkedlist_add_back(list, element);
         pthread_mutex_unlock(&list->mutex);
         return err;
-    }  
+    }
 
     // Pick the two neighboring nodes
-    LinkedListNode_t* left = list->first;
-    uint32_t count = pos;
-    while (count > 1) {
-        left = left->next;
-        count -= 1;
-    }
-    LinkedListNode_t* right = left->next;
+    LinkedListNode_t* right = _llnode_get(list, pos, size);
+    LinkedListNode_t* left = right->prev;
 
     // Make sure this node has valid neighbors
     if (left == NULL || right == NULL) {
@@ -199,7 +228,7 @@ ListError_t linkedlist_add_pos(LinkedList_t* list, uint32_t pos, void* element) 
     }
 
     // Make the new node and link it in
-    LinkedListNode_t* new = _create_llnode(element, left, right);
+    LinkedListNode_t* new = _llnode_create(element, left, right);
     left->next = new;    
     right->next = new;
 
@@ -213,22 +242,19 @@ ListError_t linkedlist_add_pos(LinkedList_t* list, uint32_t pos, void* element) 
  * @inherit
  */
 void* linkedlist_get(LinkedList_t* list, uint32_t pos) {
-    // First, lock the list
+    // Lock the list and find the node
     pthread_mutex_lock(&list->mutex);
 
-    // Iterate over all nodes
-    uint32_t count = 0;
-    LinkedListNode_t* node = list->first;    
-    while (node != NULL && count < pos) {
-        node = node->next;
-        count += 1;
+    // Next, do a bounds check
+    uint32_t size = linkedlist_size(list);
+    if (size <= pos) {
+        list->err = LIST_BOUNDS;
+        pthread_mutex_unlock(&list->mutex);
+        return NULL;
     }
 
-    // Check to see if the node was found
-    void* result = NULL;
-    if (node != NULL) {
-       result = node->data;
-    }
+    // Find the data and return the mutex
+    void* result = _llnode_get(list, pos, size)->data;
     pthread_mutex_unlock(&list->mutex);
     return result;
 }
@@ -254,7 +280,7 @@ void* linkedlist_remove_front(LinkedList_t* list) {
     if (remove->next == NULL) {
         list->last = NULL;
     }
-    _destroy_llnode(remove, true);
+    _llnode_free(remove, true);
     pthread_mutex_unlock(&list->mutex);
     return data;
 }
@@ -280,7 +306,7 @@ void* linkedlist_remove_back(LinkedList_t* list) {
     if (remove->prev == NULL) {
         list->first = NULL;
     }
-    _destroy_llnode(remove, true);
+    _llnode_free(remove, true);
     pthread_mutex_unlock(&list->mutex);
     return data;
 }
@@ -293,7 +319,7 @@ void* linkedlist_remove_pos(LinkedList_t* list, uint32_t pos) {
     // First, lock the list
     pthread_mutex_lock(&list->mutex);
     
-    // First, do a bounds check
+    // Next, do a bounds check
     uint32_t size = linkedlist_size(list);
     if (size <= pos) {
         list->err = LIST_BOUNDS;
@@ -313,12 +339,7 @@ void* linkedlist_remove_pos(LinkedList_t* list, uint32_t pos) {
     }
 
     // Find the afflicted node
-    LinkedListNode_t* remove = list->first;
-    uint32_t count = pos;
-    while (count > 0) {
-        remove = remove->next;
-        count -= 1;
-    }
+    LinkedListNode_t* remove = _llnode_get(list, pos, size);
     LinkedListNode_t* left = remove->prev;
     LinkedListNode_t* right = remove->next;
 
@@ -332,7 +353,7 @@ void* linkedlist_remove_pos(LinkedList_t* list, uint32_t pos) {
 
     // Remove the afflicted node and patch the other two together
     void* data = remove->data;
-    _destroy_llnode(remove, true);
+    _llnode_free(remove, true);
     left->next = right;
     right->prev = left;
     pthread_mutex_unlock(&list->mutex);
@@ -367,18 +388,20 @@ uint32_t linkedlist_size(LinkedList_t* list) {
  */
 void linkedlist_free(LinkedList_t* list) {
     // Clean any nodes if the last has them
+    pthread_mutex_lock(&list->mutex);
     if (list->first != NULL && list->last != NULL) {
         // Iterate over each element and clean them up
         LinkedListNode_t* cur = list->first;
         LinkedListNode_t* next;
         while (cur != NULL) {
             next = cur->next;
-            _destroy_llnode(cur, true);
+            _llnode_free(cur, true);
             cur = next;
         }
     }
 
-    // Clean up the mutex
+    // Clean up the mutex (destroying a locked mutex is undefined)
+    pthread_mutex_unlock(&list->mutex);
     pthread_mutex_destroy(&list->mutex);
     
     // Clean up the data structure
