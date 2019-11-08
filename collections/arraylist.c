@@ -169,9 +169,16 @@ void* arraylist_remove(ArrayList_t* list, uint32_t pos) {
     list->array[list->len - 1] = 0; // clear the last position
     list->len -= 1;
 
-    /*
-     * todo: decrease the allocated memory if it gets too big
-     */
+	//If we have too much allocated overhead, deallocate, leaving a little bit of buffer room
+	if(list->len + (DEFAULT_LIST_STEP) * 4 < list->allocated)
+	{
+        void** temp = realloc(list->array, sizeof(void*) * (list->len + DEFAULT_LIST_STEP));
+        if (temp == NULL) {
+            list->err = LIST_MEMORY;
+            pthread_mutex_unlock(&list->mutex);
+            return LIST_MEMORY;
+        }
+	}
 
     // Unlock the list
     pthread_mutex_unlock(&list->mutex);
