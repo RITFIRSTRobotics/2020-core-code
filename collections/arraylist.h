@@ -7,6 +7,10 @@
  */
 #ifndef __CORE_COLLECTION_ARRAYLIST
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // do some preprocessor voodoo
 #ifdef _LOCAL_HEADER
     #include "list.h"
@@ -107,5 +111,9 @@ uint32_t arraylist_size(ArrayList_t* list);
  * @error none
  */
 void arraylist_free(ArrayList_t* list);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

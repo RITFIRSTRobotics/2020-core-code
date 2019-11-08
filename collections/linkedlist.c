@@ -154,8 +154,8 @@ ListError_t linkedlist_add_front(LinkedList_t* list, void* element) {
 
     // Update the list, then unlock it
     list->first = new;
+    list->err = LIST_OKAY;
     pthread_mutex_unlock(&list->mutex);
-    
     return LIST_OKAY;
 }
 
@@ -185,8 +185,8 @@ ListError_t linkedlist_add_back(LinkedList_t* list, void* element) {
     
     // Update the list, then unlock it
     list->last = new;
+    list->err = LIST_OKAY;
     pthread_mutex_unlock(&list->mutex);
-    
     return LIST_OKAY;
 }
 
@@ -232,9 +232,9 @@ ListError_t linkedlist_add_pos(LinkedList_t* list, uint32_t pos, void* element) 
     left->next = new;    
     right->next = new;
 
-    // Unlock the list
+    // Mark the operation as successful and unlock the list
+    list->err = LIST_OKAY;
     pthread_mutex_unlock(&list->mutex);
-
     return LIST_OKAY;
 }
 
@@ -253,8 +253,15 @@ void* linkedlist_get(LinkedList_t* list, uint32_t pos) {
         return NULL;
     }
 
-    // Find the data and return the mutex
+    // Find the data and set the error state
     void* result = _llnode_get(list, pos, size)->data;
+    if (result == NULL) {
+        list->err = LIST_INVALID_STATE;
+    } else {
+        list->err = LIST_OKAY;
+    }
+
+    // Return the lock and any data
     pthread_mutex_unlock(&list->mutex);
     return result;
 }
@@ -281,12 +288,15 @@ void* linkedlist_remove_front(LinkedList_t* list) {
         list->last = NULL;
     }
     _llnode_free(remove, true);
+
+    // Run some finishing touches
+    list->err = LIST_OKAY;
     pthread_mutex_unlock(&list->mutex);
     return data;
 }
 
 /**
- *
+ * @inherit
  */
 void* linkedlist_remove_back(LinkedList_t* list) {
     // First, lock the list
@@ -307,6 +317,9 @@ void* linkedlist_remove_back(LinkedList_t* list) {
         list->first = NULL;
     }
     _llnode_free(remove, true);
+
+    // Run some finishing touches
+    list->err = LIST_OKAY;
     pthread_mutex_unlock(&list->mutex);
     return data;
 }
@@ -356,8 +369,10 @@ void* linkedlist_remove_pos(LinkedList_t* list, uint32_t pos) {
     _llnode_free(remove, true);
     left->next = right;
     right->prev = left;
+
+    // Run some finishing touches
+    list->err = LIST_OKAY;
     pthread_mutex_unlock(&list->mutex);
-    
     return data;
 }
 
@@ -377,7 +392,8 @@ uint32_t linkedlist_size(LinkedList_t* list) {
         count += 1;
     }
 
-    // Unlock the list
+    // Mark the operaton as successful and unlock the list
+    list->err = LIST_OKAY;
     pthread_mutex_unlock(&list->mutex);
     
     return count;

@@ -8,6 +8,10 @@
 #ifndef __CORE_COLLECTION_LIST
 #define __CORE_COLLECTION_LIST
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <pthread.h>
 
@@ -103,5 +107,9 @@ uint32_t list_size(List_t* list);
  * @error none
  */
 void list_free(List_t* list);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

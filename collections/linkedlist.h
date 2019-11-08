@@ -1,11 +1,16 @@
 /*
- * core/collections/linkedlist.c
+ * core/collections/linkedlist.h
  *
  * A linked list implementation
  *
  * @author Connor Henley, @thatging3rkid
  */
 #ifndef __CORE_COLLECTION_LINKEDLIST
+#define __CORE_COLLECTION_LINKEDLIST
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <stdint.h>
 #include <pthread.h>
@@ -129,5 +134,9 @@ uint32_t linkedlist_size(LinkedList_t* list);
  * @error none
  */
 void linkedlist_free(LinkedList_t* list);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

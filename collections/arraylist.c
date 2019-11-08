@@ -118,11 +118,9 @@ ListError_t arraylist_add_pos(ArrayList_t* list, uint32_t pos, void* element) {
     // Finally, insert the value
     list->array[pos] = element;
     list->len += 1;
-
-    // Return the lock and return the error code
-    ListError_t tmp = list->err;
+    list->err = LIST_OKAY;
     pthread_mutex_unlock(&list->mutex);
-    return tmp;
+    return LIST_OKAY;
 }
 
 /**
@@ -139,8 +137,9 @@ void* arraylist_get(ArrayList_t* list, uint32_t pos) {
         return NULL;
     }
 
-    // Get value and unlock list
+    // Get value, clear error, and unlock list
     void* e = list->array[pos];
+    list->err = LIST_OKAY;
     pthread_mutex_unlock(&list->mutex);
     return e;
 }
@@ -187,7 +186,8 @@ void* arraylist_remove(ArrayList_t* list, uint32_t pos) {
         
     }
     
-    // Unlock the list
+    // Mark operation as successful and unlock the list
+    list->err = LIST_OKAY;
     pthread_mutex_unlock(&list->mutex);
     return res;
 }
@@ -199,6 +199,7 @@ uint32_t arraylist_size(ArrayList_t* list) {
     // Lock the list (i.e. let any pending operation finish), get the size, then unlock
     pthread_mutex_lock(&list->mutex);
     uint32_t len = list->len;
+    list->err = LIST_OKAY;
     pthread_mutex_unlock(&list->mutex);
     return len;
 }
@@ -207,8 +208,10 @@ uint32_t arraylist_size(ArrayList_t* list) {
  * @inherit
  */
 void arraylist_free(ArrayList_t* list) {
+    pthread_mutex_lock(&list->mutex);
     free(list->array);
     list->array = NULL;
+    pthread_mutex_unlock(&list->mutex);
     pthread_mutex_destroy(&list->mutex);
     free(list);
     list = NULL;
