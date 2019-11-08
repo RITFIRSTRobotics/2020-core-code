@@ -170,14 +170,15 @@ void* arraylist_remove(ArrayList_t* list, uint32_t pos) {
     list->len -= 1;
 
 	//If we have too much allocated overhead, deallocate, leaving a little bit of buffer room
-	if(list->len + (DEFAULT_LIST_STEP) * 4 < list->allocated)
+	if(list->len + (DEFAULT_LIST_STEP * 4) < list->allocated)
 	{
         void** temp = realloc(list->array, sizeof(void*) * (list->len + DEFAULT_LIST_STEP));
         if (temp == NULL) {
             list->err = LIST_MEMORY;
             pthread_mutex_unlock(&list->mutex);
-            return LIST_MEMORY;
+            return NULL;
         }
+		list->array = temp;
 	}
 
     // Unlock the list
