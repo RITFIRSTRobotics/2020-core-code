@@ -169,18 +169,24 @@ void* arraylist_remove(ArrayList_t* list, uint32_t pos) {
     list->array[list->len - 1] = 0; // clear the last position
     list->len -= 1;
 
-	//If we have too much allocated overhead, deallocate, leaving a little bit of buffer room
-	if(list->len + (DEFAULT_LIST_STEP * 4) < list->allocated)
-	{
-        void** temp = realloc(list->array, sizeof(void*) * (list->len + DEFAULT_LIST_STEP));
+	// If we have too much allocated overhead, deallocate, leaving a little bit of buffer room
+    if (list->len + (DEFAULT_LIST_STEP * 4) < list->allocated)
+    {
+        // Ask to reallocate our memory into a smaller area, making sure it worked
+        uint32_t request = list->len + DEFAULT_LIST_STEP;
+        void** temp = realloc(list->array, sizeof(void*) * request);
         if (temp == NULL) {
             list->err = LIST_MEMORY;
             pthread_mutex_unlock(&list->mutex);
             return NULL;
         }
-		list->array = temp;
-	}
 
+        // Update the data structure with the new memory
+        list->allocated = request;
+        list->array = temp;
+        
+    }
+    
     // Unlock the list
     pthread_mutex_unlock(&list->mutex);
     return res;
