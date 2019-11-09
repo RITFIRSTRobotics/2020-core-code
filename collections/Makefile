@@ -38,6 +38,10 @@ $(TEST_OBJ_DIR)/list.o: list.c list.h
 	@mkdir -p $(TEST_OBJ_DIR)
 	$(CC) $(TESTFLAGS) -c -o $@ $<
 
+$(TEST_OBJ_DIR)/stack.o: stack.c stack.h
+	@mkdir -p $(TEST_OBJ_DIR)
+	$(CC) $(TESTFLAGS) -c -o $@ $<
+
 $(TEST_OBJ_DIR)/queue.o: queue.c queue.h
 	@mkdir -p $(TEST_OBJ_DIR)
 	$(CC) $(TESTFLAGS) -c -o $@ $<
@@ -46,7 +50,8 @@ $(TEST_OBJ_DIR)/test-list.o: $(TEST_DIR)/test-list.c
 	@mkdir -p $(TEST_OBJ_DIR)
 	$(CC) $(TESTFLAGS) -c -o $@ $<
 
-test: $(TEST_OBJ_DIR)/arraylist.o $(TEST_OBJ_DIR)/linkedlist.o $(TEST_OBJ_DIR)/list.o $(TEST_OBJ_DIR)/queue.o $(TEST_OBJ_DIR)/test-list.o
+test: $(TEST_OBJ_DIR)/arraylist.o $(TEST_OBJ_DIR)/linkedlist.o $(TEST_OBJ_DIR)/list.o \
+	  $(TEST_OBJ_DIR)/stack.o $(TEST_OBJ_DIR)/queue.o $(TEST_OBJ_DIR)/test-list.o
 	$(CC) $(TESTFLAGS) $^ -o $(TEST_OBJ_DIR)/test-list
 	@echo "!!!!!!!! starting testing"
 	@$(TEST_OBJ_DIR)/test-list

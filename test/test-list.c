@@ -21,6 +21,7 @@
 #include "../collections/list.h"
 #include "../collections/arraylist.h"
 #include "../collections/linkedlist.h"
+#include "../collections/stack.h"
 #include "../collections/queue.h"
 
 #define TEST_SUCCESS 0
@@ -118,7 +119,7 @@ int t03_basic_error_handling(ListImplementation_t type) {
         fprintf(stderr, "error: incorrect error code (result=%p)\n", e);
         return TEST_FAILURE;
     }
-    list_free(list); // cleanup 
+    list_free(list); // cleanup
 
     // error-handling: try to remove something out-of-bounds
     list = list_init(type); // make a new list
@@ -139,7 +140,7 @@ int t03_basic_error_handling(ListImplementation_t type) {
         fprintf(stderr, "error: incorrect error code (result=%u)\n", result);
         return TEST_FAILURE;
     }
-    
+
     list_free(list); // cleanup
     return TEST_SUCCESS;
 }
@@ -154,7 +155,7 @@ int t04_arraylist_add_pos_0() {
     list_add_pos(list, 0, (void*) 2);
     list_add_pos(list, 0, (void*) 3);
     list_add_pos(list, 0, (void*) 4);
-    
+
     // size check
     uint32_t size = list_size(list);
     if (size != 4 || list->err != LIST_OKAY) {
@@ -162,7 +163,7 @@ int t04_arraylist_add_pos_0() {
         fprintf(stderr, "error: incorrect size %u\n", size);
         return TEST_FAILURE;
     }
-    
+
     // start removing things
     for (size_t i = 0; i < 4; i += 1) {
         uintptr_t e = (uintptr_t)list_remove(list, 3 - i);
@@ -172,7 +173,7 @@ int t04_arraylist_add_pos_0() {
             return TEST_FAILURE;
         }
     }
-    
+
     // clean up list
     list_free(list);
     return TEST_SUCCESS;
@@ -188,13 +189,13 @@ int t05_strain_test(ListImplementation_t type, size_t elements) {
     for (size_t i = 0; i < elements; i += 1) {
         items[i] = i;
     }
-    
+
     // make list and add every item
     List_t* list = list_init(type);
     for (size_t i = 0; i < elements; i += 1) {
         list_add(list, (void*) items[i]);
     }
-    
+
     // remove every-other
     for (size_t i = 0; i < (elements / 2); i += 1) {
         uintptr_t e = (uintptr_t) list_remove(list, i);
@@ -204,7 +205,7 @@ int t05_strain_test(ListImplementation_t type, size_t elements) {
             return TEST_FAILURE;
         }
     }
-    
+
     // make sure the rest of the values are odd
     for (size_t i = 0; i < (elements / 2); i += 1) {
         uintptr_t e = (uintptr_t) list_get(list, i);
@@ -214,7 +215,7 @@ int t05_strain_test(ListImplementation_t type, size_t elements) {
             return TEST_FAILURE;
         }
     }
-    
+
     // clean up
     list_free(list);
     return TEST_SUCCESS;
@@ -289,7 +290,7 @@ int t06_linkedlist_frontback_tests(uint32_t num_items) {
                 fprintf(stderr, "incorrect value removed (j=%u, i=%u, mode=0x%0x, num_items=%u)\n", j, i, mode, num_items);
                 return TEST_FAILURE;
             }
-        }       
+        }
 
         linkedlist_free(list);
     }
@@ -418,10 +419,14 @@ int t07_threadsafe_test(ListImplementation_t type) {
     free(cdata);
     cdata = NULL;
     list_free(list);
-    
+
     return (err)? TEST_FAILURE : TEST_SUCCESS;
 }
 
+/**
+ * Test the basics of the queue (since the queue uses a linked list
+ * internally, we don't need extensive tests).
+ */
 int t08_queue_test() {
     // Make and free a queue
     Queue_t* queue = queue_init();
@@ -497,6 +502,84 @@ int t08_queue_test() {
 }
 
 /**
+ * Test the basics of the stack (since the stack uses a linked list
+ * internally, we don't need extensive tests).
+ */
+int t08_stack_test() {
+    // Make and free a stack
+    Stack_t* stack = stack_init();
+    stack_free(stack);
+
+    // Make a stack and just do basic functionality testing
+    stack = stack_init();
+    stack_push(stack, (void*) 4);
+    stack_push(stack, (void*) 3);
+    stack_push(stack, (void*) 2);
+    stack_push(stack, (void*) 1);
+
+    // Make sure the operations didn't fail
+    if (stack->err != LIST_OKAY) {
+        print_dbgdata(stack);
+        fprintf(stderr, "incorrect stack error code\n");
+        return TEST_FAILURE;
+    }
+
+    // Make sure the size is right
+    uint32_t size = stack_size(stack);
+    if (size != 4 || stack->err != LIST_OKAY) {
+        print_dbgdata(stack);
+        fprintf(stderr, "incorrect response (size=%u)\n", size);
+        return TEST_FAILURE;
+    }
+
+    // Try the peek operation
+    uintptr_t e = (uintptr_t) stack_peek(stack);
+    if (((uint32_t) e) != 1 || stack->err != LIST_OKAY) {
+        print_dbgdata(stack);
+        fprintf(stderr, "incorrect value from stack_peek (e=%u)\n", (uint32_t) e);
+        return TEST_FAILURE;
+    }
+
+    // Try the peek at position operation
+    e = (uintptr_t) stack_peek_pos(stack, 3);
+    if (((uint32_t) e) != 4 || stack->err != LIST_OKAY) {
+        print_dbgdata(stack);
+        fprintf(stderr, "incorrect value from stack_peek_pos (e=%u)\n", (uint32_t) e);
+        return TEST_FAILURE;
+    }
+
+    // Remove things from the stack
+    for (uint32_t i = 1; i < 5; i += 1) {
+        e = (uintptr_t) stack_pop(stack);
+        if (((uint32_t) e) != i || stack->err != LIST_OKAY) {
+            print_dbgdata(stack);
+            fprintf(stderr, "incorrect value popped (i=%u, e=%u)\n", i, (uint32_t) e);
+            return TEST_FAILURE;
+        }
+    }
+
+    // Make sure the size is right
+    size = stack_size(stack);
+    if (size != 0 || stack->err != LIST_OKAY) {
+        print_dbgdata(stack);
+        fprintf(stderr, "incorrect response (size=%u, err=0x%0x)\n", size, stack->err);
+        return TEST_FAILURE;
+    }
+
+    // Make sure the stack is empty
+    e = (uintptr_t) stack_peek(stack);
+    if ((void*) e != NULL) {
+        print_dbgdata(stack);
+        fprintf(stderr, "stack not empty (e=%u)", (uint32_t) e);
+        return TEST_FAILURE;
+    }
+
+    // Clean up
+    stack_free(stack);
+    return TEST_SUCCESS;
+}
+
+/**
  * Code entry point
  *
  * Should run all the given tests
@@ -529,6 +612,7 @@ int main() {
     }
 
     error += t08_queue_test();
+    error += t08_stack_test();
 
     // Tests finished, handle the error code
     if (error == 0) {

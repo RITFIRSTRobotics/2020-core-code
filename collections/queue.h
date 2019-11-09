@@ -73,7 +73,7 @@ void* queue_peek(Queue_t* queue);
 void* queue_peek_pos(Queue_t* queue, uint32_t pos);
 
 /**
- * Get the size of the list (number of elements in queue)
+ * Get the size of the list (number of elements in the queue)
  *
  * @note the preferred way to test if the list is empty is to call queue_peek and check for NULL
  * @param queue the queue data structure
@@ -85,7 +85,7 @@ uint32_t queue_size(Queue_t* queue);
 /**
  * Clean up the list
  *
- * @param the list data structure
+ * @param queue the list data structure
  * @error none
  */
 void queue_free(Queue_t* queue);
