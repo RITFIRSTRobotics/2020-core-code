@@ -21,6 +21,7 @@
 #include "../collections/list.h"
 #include "../collections/arraylist.h"
 #include "../collections/linkedlist.h"
+#include "../collections/queue.h"
 
 #define TEST_SUCCESS 0
 #define TEST_FAILURE 1
@@ -421,6 +422,79 @@ int t07_threadsafe_test(ListImplementation_t type) {
     return (err)? TEST_FAILURE : TEST_SUCCESS;
 }
 
+int t08_queue_test() {
+    // Make and free a queue
+    Queue_t* queue = queue_init();
+    queue_free(queue);
+
+    // Make a queue and just do basic functionality testing
+    queue = queue_init();
+    queue_enqueue(queue, (void*) 1);
+    queue_enqueue(queue, (void*) 2);
+    queue_enqueue(queue, (void*) 3);
+    queue_enqueue(queue, (void*) 4);
+
+    // Make sure the operations didn't fail
+    if (queue->err != LIST_OKAY) {
+        print_dbgdata(queue);
+        fprintf(stderr, "incorrect queue error code\n");
+        return TEST_FAILURE;
+    }
+
+    // Make sure the size is right
+    uint32_t size = queue_size(queue);
+    if (size != 4 || queue->err != LIST_OKAY) {
+        print_dbgdata(queue);
+        fprintf(stderr, "incorrect response (size=%u)\n", size);
+        return TEST_FAILURE;
+    }
+
+    // Try the peek operation
+    uintptr_t e = (uintptr_t) queue_peek(queue);
+    if (((uint32_t) e) != 4 || queue->err != LIST_OKAY) {
+        print_dbgdata(queue);
+        fprintf(stderr, "incorrect value from queue_peek (e=%u)\n", (uint32_t) e);
+        return TEST_FAILURE;
+    }
+
+    // Try the peek at position operation
+    e = (uintptr_t) queue_peek_pos(queue, 3);
+    if (((uint32_t) e) != 1 || queue->err != LIST_OKAY) {
+        print_dbgdata(queue);
+        fprintf(stderr, "incorrect value from queue_peek_pos (e=%u)\n", (uint32_t) e);
+        return TEST_FAILURE;
+    }
+
+    // Dequeue things
+    for (uint32_t i = 1; i < 5; i += 1) {
+        e = (uintptr_t) queue_dequeue(queue);
+        if (((uint32_t) e) != i || queue->err != LIST_OKAY) {
+            print_dbgdata(queue);
+            fprintf(stderr, "incorrect value dequeued (i=%u, e=%u)\n", i, (uint32_t) e);
+            return TEST_FAILURE;
+        }
+    }
+
+    // Make sure the size is right
+    size = queue_size(queue);
+    if (size != 0 || queue->err != LIST_OKAY) {
+        print_dbgdata(queue);
+        fprintf(stderr, "incorrect response (size=%u, err=0x%0x)\n", size, queue->err);
+        return TEST_FAILURE;
+    }
+
+    // Make sure the queue is empty
+    e = (uintptr_t) queue_peek(queue);
+    if ((void*) e != NULL) {
+        print_dbgdata(queue);
+        fprintf(stderr, "queue not empty (e=%u)", (uint32_t) e);
+        return TEST_FAILURE;
+    }
+
+    // Clean up
+    queue_free(queue);
+    return TEST_SUCCESS;
+}
 
 /**
  * Code entry point
@@ -453,6 +527,8 @@ int main() {
             }
         }
     }
+
+    error += t08_queue_test();
 
     // Tests finished, handle the error code
     if (error == 0) {
