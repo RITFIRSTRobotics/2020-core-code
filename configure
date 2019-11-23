@@ -5,6 +5,9 @@
 #
 # @author Connor Henley, @thatging3rkid 
 
+# install dependencies
+sudo apt-get update -qq && sudo apt-get install -y valgrind
+
 # start the makefile, put the header down
 printf "" >Makefile
 printf '# %s makefile\n' "${PWD##*/}" >>Makefile
