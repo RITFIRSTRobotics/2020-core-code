@@ -11,3 +11,6 @@ tmp/
 
 # Valgrind outputs
 massif.out.*
+
+# ./configure output
+Makefile

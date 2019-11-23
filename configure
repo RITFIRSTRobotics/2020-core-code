@@ -1,0 +1,30 @@
+#!/bin/bash
+# 2020-core-code configuration file
+#
+# This file will automatically generates a makefile that runs all the sub-makefiles
+#
+# @author Connor Henley, @thatging3rkid 
+
+# start the makefile, put the header down
+printf "" >Makefile
+printf '# %s makefile\n' "${PWD##*/}" >>Makefile
+printf '# Generated on: %s at %s\n' "$HOSTNAME" "`date`" >>Makefile
+
+# Add the build-all instruction
+printf '\nall:\n' >>Makefile
+printf '\t@echo "done"\n' >>Makefile
+printf '\n' >>Makefile
+
+# Add the test instruction
+printf '\ncheck:\n' >>Makefile
+for dir in ./*/        # list directories 
+do
+    if test -f "${dir}/Makefile"; then
+        printf '\tmake -C %s test\n' ${dir} >>Makefile
+    fi
+done
+printf '\t@echo "done"\n' >>Makefile
+printf '\n' >>Makefile
+
+
+echo "Complete!"
