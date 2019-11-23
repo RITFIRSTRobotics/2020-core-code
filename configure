@@ -6,28 +6,46 @@
 # @author Connor Henley, @thatging3rkid 
 
 # install dependencies
-sudo apt-get update -qq && sudo apt-get install -y valgrind
+if ! [ -x "$(command -v valgrind)" ]; then
+    sudo apt-get update -qq && sudo apt-get install -y valgrind
+fi
 
 # start the makefile, put the header down
 printf "" >Makefile
 printf '# %s makefile\n' "${PWD##*/}" >>Makefile
 printf '# Generated on: %s at %s\n' "$HOSTNAME" "`date`" >>Makefile
 
+# Search for Makefiles
+dirs=()
+skips=("./.git/" "./.github/" "./obj/" "./tmp/")
+for dir in ./*/
+do
+    # check if this should be skipped
+    if [[ " ${skips[@]} " =~ " ${dir} " ]]; then
+        continue
+    fi
+
+    # if there's a makefile, save it
+    if test -f "${dir}/Makefile"; then
+        dirs+=${dir}
+    fi
+done
+
 # Add the build-all instruction
 printf '\nall:\n' >>Makefile
+for s in "${dirs[@]}"
+do
+    printf '\tmake -C %s clean && make -C %s ci-all\n' ${s} ${s} >>Makefile
+done
 printf '\t@echo "done"\n' >>Makefile
 printf '\n' >>Makefile
 
 # Add the test instruction
 printf '\ncheck:\n' >>Makefile
-for dir in ./*/        # list directories 
+for s in "${dirs[@]}"
 do
-    if test -f "${dir}/Makefile"; then
-        printf '\tmake -C %s test\n' ${dir} >>Makefile
-    fi
+     printf '\tmake -C %s ci-test\n' ${s} >>Makefile
 done
 printf '\t@echo "done"\n' >>Makefile
-printf '\n' >>Makefile
-
 
 echo "Complete!"

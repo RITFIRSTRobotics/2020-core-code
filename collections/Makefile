@@ -57,6 +57,13 @@ test: $(TEST_OBJ_DIR)/arraylist.o $(TEST_OBJ_DIR)/linkedlist.o $(TEST_OBJ_DIR)/l
 	@$(TEST_OBJ_DIR)/test-list
 	@valgrind --leak-check=full --error-exitcode=1 $(TEST_OBJ_DIR)/test-list
 
+### CI testing stuff
+
+ci-all: $(TEST_OBJ_DIR)/arraylist.o $(TEST_OBJ_DIR)/linkedlist.o $(TEST_OBJ_DIR)/list.o \
+	    $(TEST_OBJ_DIR)/stack.o $(TEST_OBJ_DIR)/queue.o
+
+ci-test: test
+
 ### Maintenece recipes
 
 clean:
