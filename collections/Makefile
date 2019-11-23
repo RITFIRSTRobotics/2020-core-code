@@ -55,7 +55,7 @@ test: $(TEST_OBJ_DIR)/arraylist.o $(TEST_OBJ_DIR)/linkedlist.o $(TEST_OBJ_DIR)/l
 	$(CC) $(TESTFLAGS) $^ -o $(TEST_OBJ_DIR)/test-list
 	@echo "!!!!!!!! starting testing"
 	@$(TEST_OBJ_DIR)/test-list
-	@valgrind --leak-check=full $(TEST_OBJ_DIR)/test-list
+	@valgrind --leak-check=full --error-exitcode=1 $(TEST_OBJ_DIR)/test-list
 
 ### Maintenece recipes
 
