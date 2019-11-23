@@ -1,3 +1,4 @@
+#!/bin/bash
 # 2020-core-code configuration file
 #
 # This file will automatically generates a makefile that runs all the sub-makefiles
