@@ -14,3 +14,6 @@ massif.out.*
 
 # ./configure output
 Makefile
+
+# library files
+lib
