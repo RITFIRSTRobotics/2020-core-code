@@ -141,7 +141,7 @@ int t03_basic_error_handling(ListImplementation_t type) {
         return TEST_FAILURE;
     }
 
-//    list_free(list); // cleanup
+    list_free(list); // cleanup
     return TEST_SUCCESS;
 }
 
