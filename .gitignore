@@ -13,7 +13,7 @@ tmp/
 massif.out.*
 
 # ./configure output
-Makefile
+/Makefile
 
 # library files
 lib
