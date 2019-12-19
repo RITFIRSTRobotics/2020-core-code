@@ -19,6 +19,9 @@
 \setlength\parindent{0pt}
 \graphicspath{{images/}{drawings/}}
 
+\usepackage{rotating}
+\usepackage{array}
+
 % % % % % % % % % % % Header footer
 % % % % % % % % % % %EDIT THIS % % % % % % % % % % % % % % % % % % % %
 \pagestyle{fancy}
@@ -134,6 +137,72 @@ An E-STOPPED robot should stop all of its motors,
 return to the default position, and ignore or respond with failure to all further messages until re-initialized.
 
 \section {Packet Structures}
+\paragraph{}
+The robot control packets used for controlling RIT FIRST imagine robots generally follow a Type-Length-Value (TLV) structure.
+Packets may be sent via either UDP or TCP, and robots should implement listeners for both protocols.
+
+\subsection {Packet Header}
+\paragraph{}
+Each packet contains a header with the message type (which determines how the robot should unpack the data in the packet),
+and message length, and a timestamp.
+\newline
+\begin{table}[h]
+    \centering
+    \label{tab:headerDef}
+    \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        0 & \multicolumn{8}{c|}{Message Type} & \multicolumn{24}{c|}{Message Length} \\
+        \hline
+        1 & \multicolumn{32}{c|}{Timestamp} \\
+        \hline
+        2..n & \multicolumn{32}{c|}{Data} \\
+        \hline
+    \end{tabular}
+\end{table}
+\clearpage
+Message Type: Denotes the type of message contained in this packet, see Table 1 for more information.\\
+Message Length: The length of the message, including the header, in bytes.
+Timestamp: A Unix timestamp (the number of seconds that have elapsed since the Unix epoch, 
+that is the time 00:00:00 UTC on 1 January 1970, minus leap seconds), 
+in the format of a single precision IEEE floating point number.\\
+Data: The data which this packet carries, which must be <Message Length> - 2 words long.\\
+
 
 % If you need a bibliography for your document, add it here
 %\begin{thebibliography}{9}
