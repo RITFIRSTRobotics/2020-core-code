@@ -8,10 +8,10 @@ Template.pdf: Template.aux
 ControlProtocol.pdf: ControlProtocol.aux
 	pdflatex -halt-on-error ControlProtocol/ControlProtocol.tex
 
-Template.aux:
+Template.aux: Template.tex
 	pdflatex -halt-on-error Template.tex
 
-ControlProtocol.aux:
+ControlProtocol.aux: ControlProtocol/ControlProtocol.tex
 	pdflatex -halt-on-error ControlProtocol/ControlProtocol.tex
 
 clean:
