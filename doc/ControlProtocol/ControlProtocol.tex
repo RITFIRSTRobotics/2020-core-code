@@ -258,7 +258,6 @@ If a field is not used, the word containing it should not be included in the mes
         \hline
     \end{tabular}
 \end{table}
-\clearpage
 Robot UUID: A unique identifier for the robot which MAY NOT conflict with any other robots on the field.
 
 
@@ -311,7 +310,6 @@ State request packets are empty except for the standard header with the appropri
         \hline
     \end{tabular}
 \end{table}
-\clearpage
 
 \subsection {STATE\_RESPONSE Packets}
 \paragraph{}
@@ -366,7 +364,6 @@ These packets contatin arbitrary data about the state of the message sender.
         \hline
     \end{tabular}
 \end{table}
-\clearpage
 
 State Code: An integer value signifying the state of the sender.  Valid codes are shown in Table \ref{tab:StateCodes}.
 
@@ -376,7 +373,7 @@ State Code: An integer value signifying the state of the sender.  Valid codes ar
     \centering
     \label{tab:StateCodes}
     \caption{Robot and FMS States and Codes}
-    \begin{tabular}{|c|c|c|c|}
+    \begin{tabular}{|c|p{1cm}|p{3in}|c|}
         \hline
         State Name & Code & Meaning & FMS or Robot? \\
         \hline
