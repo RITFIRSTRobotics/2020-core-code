@@ -213,7 +213,7 @@ If a field is not used, the word containing it should not be included in the mes
 \newline
 \begin{table}[h]
     \centering
-    \label{tab:headerDef}
+    \label{tab:InitDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
@@ -268,7 +268,7 @@ State request packets are empty except for the standard header with the appropri
 \newline
 \begin{table}[h]
     \centering
-    \label{tab:headerDef}
+    \label{tab:stateReqestDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
@@ -312,6 +312,86 @@ State request packets are empty except for the standard header with the appropri
     \end{tabular}
 \end{table}
 \clearpage
+
+\subsection {STATE\_RESPONSE Packets}
+\paragraph{}
+These packets contatin arbitrary data about the state of the message sender.
+\newline
+\begin{table}[h]
+    \centering
+    \label{tab:stateResponseDef}
+    \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+        2 & \multicolumn{32}{c|}{State Code} \\
+        \hline
+        3..n & \multicolumn{32}{c|}{Arbitrary Data} \\
+        \hline
+    \end{tabular}
+\end{table}
+\clearpage
+
+State Code: An integer value signifying the state of the sender.  Valid codes are shown in Table \ref{tab:StateCodes}.
+
+%TODO a lot of these don't describe how the FMS handles states this table says it's allowed to be in.
+%That should be fixed
+\begin{table}[b]
+    \centering
+    \label{tab:StateCodes}
+    \caption{Robot and FMS States and Codes}
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        State Name & Code & Meaning & FMS or Robot? \\
+        \hline
+        INITIALIZED & 0x00 & The robot has been initialized but not configured (See the Initialization sequence) & Robot \\
+        \hline
+        DISABLED & 0x01 & The robot is disabled and should not take action based on or be sent any USER\_DATA packets. & Robot/FMS\\
+        \hline
+        ENABLED & 0x02 & The robot is enabled and should react to USER\_DATA packets. & Robot/FMS \\
+        \hline
+        E-STOPPED & 0xFF & The robot has been E-STOPPED and should not respond to any further packets except with error messages. & Robot/FMS \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Arbitrary Data: User-defined data which may be used or ignored by either the robot or FMS.
 
 % If you need a bibliography for your document, add it here
 %\begin{thebibliography}{9}
