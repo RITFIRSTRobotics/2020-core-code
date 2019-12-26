@@ -390,6 +390,63 @@ State Code: An integer value signifying the state of the sender.  Valid codes ar
 
 Arbitrary Data: User-defined data which may be used or ignored by either the robot or FMS.
 
+\subsection {STATE\_UPDATE Packets}
+\paragraph{}
+These packets are sent when the FMS wishes to update the state of a robot.
+\newline
+\begin{table}[h]
+    \centering
+    \label{tab:stateUpdateDef}
+    \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+        2 & \multicolumn{32}{c|}{State Code} \\
+        \hline
+        3..n & \multicolumn{32}{c|}{Arbitrary Data} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+State Code: An integer value signifying the state of the robot or FMS.  Valid codes are shown in Table \ref{tab:StateCodes}\\
+Arbitrary data: User-defined data which may be used or ignored by either the robot or FMS.
+
 % If you need a bibliography for your document, add it here
 %\begin{thebibliography}{9}
 %\end{thebibliography}
