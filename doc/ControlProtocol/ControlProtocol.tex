@@ -629,6 +629,70 @@ Key-value list: A semi-colon (;) separated list of key-value pairs representing 
 update or create on the reciever.
 Each key is a nul-terminated string immediately followed by a TLV structure signifying the value of the configuration value.\\
 Unused:  Padding bytes to force packet alignment to a 32 bit word.
+
+\subsection {USER\_DATA Packets}
+\paragraph{}
+USER\_DATA Packets contain data from the human controller.
+\begin{table}[h]
+    \centering
+    \label{tab:userDataDef}
+    \begin{tabular}{|p{1cm}|p{0.04cm}|p{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+        2 & \multicolumn{8}{c|}{Left Joystick X} & \multicolumn{8}{c|}{Left Joystick Y} & 
+            \multicolumn{8}{c|}{Right Joystick X} & \multicolumn{8}{c|}{Right Joystick Y} \\
+        \hline
+        3 & A & B & \multicolumn{14}{c|}{\cellcolor[gray]{.6} Reserved} & \multicolumn{16}{c|}{Controller UUID} \\
+        \hline
+    \end{tabular}
+\end{table}
+\newline
+Left Joystick X: The X axis of the left joystick on the controller.  An unsigned integer value from 0 to 255.\\
+Left Joystick Y: The Y axis of the left joystick on the controller.  An unsigned integer value from 0 to 255.\\
+Right Joystick X: The X axis of the right joystick on the controller.  An unsigned integer value from 0 to 255.\\
+Right Joystick Y: The Y axis of the right joystick on the controller.  An unsigned integer value from 0 to 255.\\
+A: The current state of button “A” (<which button?>).  0 is unpressed, 1 is pressed.\\
+B: The current state of button “B” (<which button?>).  0 is unpressed, 1 is pressed.\\
+Controller UID: A universally unique ID for this controller.
+
+
 % If you need a bibliography for your document, add it here
 %\begin{thebibliography}{9}
 %\end{thebibliography}
