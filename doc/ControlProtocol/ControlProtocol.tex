@@ -21,6 +21,7 @@
 
 \usepackage{rotating}
 \usepackage{array}
+\usepackage[table]{xcolor}
 
 % % % % % % % % % % % Header footer
 % % % % % % % % % % %EDIT THIS % % % % % % % % % % % % % % % % % % % %
@@ -447,6 +448,187 @@ These packets are sent when the FMS wishes to update the state of a robot.
 State Code: An integer value signifying the state of the robot or FMS.  Valid codes are shown in Table \ref{tab:StateCodes}\\
 Arbitrary data: User-defined data which may be used or ignored by either the robot or FMS.
 
+\subsection {CONFIG\_REQUEST Packets}
+\paragraph{}
+These packets are sent by any agent to request a config value or values of another.
+\newline
+\begin{table}[h]
+    \centering
+    \label{tab:configRequestDef}
+    \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+        2 & \multicolumn{32}{c|}{\multirow{2}{*}{Keys List}} \\
+        \cline{1-1}
+        ... & \multicolumn{32}{c|}{}\\
+        \hline
+        n & \multicolumn{16}{c|}{Keys List (cont)} & \multicolumn{16}{c|}{\cellcolor[gray]{.6}Unused} \\
+        \hline
+    \end{tabular}
+\end{table}
+\newline
+Keys list:  A sequence of nul-terminated strings which represent the configuration keys of the receiving agent.
+It may be the special keyword “ALL”, which tells the receiving agent to respond with their entire configuration.\\
+Unused: Padding bytes to make the packet aligned to a 32-bit boundary
+
+\subsection {CONFIG\_RESPONSE Packets}
+\paragraph{}
+These packets are sent in response to a CONFIG\_REQUEST packet and contains the reqeusted configuration keys.
+\newline
+\begin{table}[h]
+    \centering
+    \label{tab:configResponseDef}
+    \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+        2 & \multicolumn{32}{c|}{\multirow{2}{*}{Key-value List}} \\
+        \cline{1-1}
+        ... & \multicolumn{32}{c|}{}\\
+        \hline
+        n & \multicolumn{16}{c|}{Keys-value List (cont)} & \multicolumn{16}{c|}{\cellcolor[gray]{.6}Unused} \\
+        \hline
+    \end{tabular}
+\end{table}
+\newline
+Key-value list: A semi-colon (;) separated list of key-value pairs representing the configuration values to 
+update or create on the reciever.
+Each key is a nul-terminated string immediately followed by a TLV structure signifying the value of the configuration value.\\
+Unused:  Padding bytes to force packet alignment to a 32 bit word.
+
+\subsection {CONFIG\_UPDATE Packets}
+\paragraph{}
+An agent sends this packet to attempt to change the configuration of another agent.
+\newline
+\begin{table}[h]
+    \centering
+    \label{tab:configUpdateDef}
+    \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+        2 & \multicolumn{32}{c|}{\multirow{2}{*}{Key-value List}} \\
+        \cline{1-1}
+        ... & \multicolumn{32}{c|}{}\\
+        \hline
+        n & \multicolumn{16}{c|}{Keys-value List (cont)} & \multicolumn{16}{c|}{\cellcolor[gray]{.6}Unused} \\
+        \hline
+    \end{tabular}
+\end{table}
+\newline
+Key-value list: A semi-colon (;) separated list of key-value pairs representing the configuration values to 
+update or create on the reciever.
+Each key is a nul-terminated string immediately followed by a TLV structure signifying the value of the configuration value.\\
+Unused:  Padding bytes to force packet alignment to a 32 bit word.
 % If you need a bibliography for your document, add it here
 %\begin{thebibliography}{9}
 %\end{thebibliography}
