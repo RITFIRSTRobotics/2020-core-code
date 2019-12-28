@@ -3,4 +3,11 @@
 *.pdf
 *.aux
 *.sympy
+*.acn
+*.acr
+*.alg
+*.glg
+*.glo
+*.gls
+*.ist
 

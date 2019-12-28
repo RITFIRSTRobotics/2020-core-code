@@ -18,6 +18,7 @@
 \usepackage{siunitx}
 \setlength\parindent{0pt}
 \graphicspath{{images/}{drawings/}}
+\usepackage[acronym]{glossaries}
 
 \usepackage{rotating}
 \usepackage{array}
@@ -33,7 +34,16 @@
 \cfoot{YYYY-MM-DD}
 \rfoot{Page \thepage}
 % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% % % % % % % % % % % %Glossary Setup % %% % % % %
+\makeglossaries
 
+\newacronym{tcp}{TCP}{Transmission Control Protocol}
+\newacronym{udp}{UDP}{User Datagram Protocol}
+\newacronym{uuid}{UUID}{Unique Universal ID}
+\newacronym{fms}{FMS}{Field Management System}
+\newacronym{asc}{ASC}{TODO get this from Connor}
+
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
 
 \begin{document}
 
@@ -52,8 +62,8 @@
 
 \tableofcontents
 
-\newpage
 
+\newpage
 \section {Packet Types}
 \paragraph{}
 This standard defines several different packet types to better fit the packet structure to the type of data being sent.
@@ -69,29 +79,29 @@ and the network protocol which should be used to send them is shown in Table \re
         \hline
         PacketType & Value & Purpose & Protocol \\ 
         \hline
-        INIT & 0x00 & Robot Initialization & TCP \\ 
+        INIT & 0x00 & Robot Initialization & \acrshort{tcp} \\ 
         \hline
-        STATE\_REQUEST & 0x10 & A request for the recipient to respond with their current state. & TCP \\
+        STATE\_REQUEST & 0x10 & A request for the recipient to respond with their current state. & \acrshort{tcp} \\
         \hline
         STATE\_UPDATE & 0x12 & The current state of the sender. 
-        Sent periodically or in response to a STATE\_REQUEST message. & TCP \\
+        Sent periodically or in response to a STATE\_REQUEST message. & \acrshort{tcp} \\
         \hline
-        CONFIG\_REQUEST & 0x20 & A request the that the recipient respond with their current configuration. & TCP \\
+        CONFIG\_REQUEST & 0x20 & A request the that the recipient respond with their current configuration. & \acrshort{tcp} \\
         \hline
         CONFIG\_RESPONSE & 0x21 & Sent in response to a CONFIG\_REQUEST message; 
-            includes data about the senders configuration. & TCP \\
+            includes data about the senders configuration. & \acrshort{tcp} \\
         \hline
         CONFIG\_UPDATE & 0x22 & A request for the recipient to update their configuration according to the data contained 
-            in the message. & TCP \\
+            in the message. & \acrshort{tcp} \\
         \hline
-        USER\_DATA & 0x30 & Data from the robot controllers & UDP \\
+        USER\_DATA & 0x30 & Data from the robot controllers & \acrshort{udp} \\
         \hline
         UPDATE\_STATUS & 0x40 & Optionally sent in response to CONFIG\_UPDATE or STATE\_UPDATE requests.
-        Contains the result of the update.
-        If the update failed, the message should contain a reason for the failure.
-        If this message is not received in response to a *\_UPDATE message, the update should be assumed to be a success.& UDP \\
+        Contains the result of the update.  If the update failed, the message should contain a reason for the failure.
+        If this message is not received in response to a *\_UPDATE message, the update should be assumed to be a success.
+        & \acrshort{udp} \\
         \hline
-        DEBUG & 0xFF & Debug data to be reported to a developer. & TCP/UDP \\
+        DEBUG & 0xFF & Debug data to be reported to a developer. & \acrshort{tcp}/\acrshort{udp} \\
         \hline
     \end{tabular}
 \end{table}
@@ -99,41 +109,41 @@ and the network protocol which should be used to send them is shown in Table \re
 \section {Protocol Sequence}
 \subsection{Initialization}
 \paragraph{}
-Upon boot up, a robot connects to the robot network and makes an INIT request containing its UUID to the FMS 
-(The FMS network address must be configured in the robot configuration before startup.) 
-The FMS then responds to the robot with an empty INIT message. 
-The FMS then sends a CONFIG\_UDPATE message to the robot which configures it for a controller connected 
-to the FMS and the alliance color corresponding to the controller it received. 
+Upon boot up, a robot connects to the robot network and makes an INIT request containing its \acrfull{uuid} to the \acrfull{fms} 
+(The \acrshort{fms} network address must be configured in the robot configuration before startup.) 
+The \acrshort{fms} then responds to the robot with an empty INIT message. 
+The \acrshort{fms} then sends a CONFIG\_UDPATE message to the robot which configures it for a controller connected 
+to the \acrshort{fms} and the alliance color corresponding to the controller it received. 
 \paragraph{}
 The CONFIG\_UPDATE message is not required to be sent immediately following the INIT response, 
 in order to allow a human field manager to assign a controller and team to a robot which has just been added to the field.
 An Initialization procedure may happen at any time, including during the match,
-and the FMS should respond whenever it receives an INIT request.
+and the \acrshort{fms} should respond whenever it receives an INIT request.
 
 \subsection{Match Start}
 \paragraph{}
 Before a robot may join a match, it must have successfully completed the entirety of the Initialization procedure 
 (including the configuration).  
-To start the match, the FMS sends a STATE\_UPDATE message to all of the robots it has successfully initialized 
+To start the match, the \acrshort{fms} sends a STATE\_UPDATE message to all of the robots it has successfully initialized 
 which sets them to the ENABLED state.
 
 \subsection {The Match}
 \paragraph{}
-During a match, the FMS should poll the connected ASCs for controller data, 
+During a match, the \acrshort{fms} should poll the connected \acrfull{asc} for controller data, 
 and then forward that data to the robots which it has fully initialized via USER\_DATA messages.
 Each USER\_DATA message should be sent only to the robot for which the controller data is intended,
 and it should only contain the data intended for that robot.
-The FMS may optionally periodically send STATE\_REQUEST messages to each of the robots participating in a match,
+The \acrshort{fms} may optionally periodically send STATE\_REQUEST messages to each of the robots participating in a match,
 and may act according to the response or lack thereof.
 
 \subsection {Match End}
 \paragraph{}
-To stop a match regularly, the FMS sends a STATE\_UPDATE message to 
+To stop a match regularly, the \acrshort{fms} sends a STATE\_UPDATE message to 
 all of the robots it has successfully initialized to DISABLED.
 
 \subsection{Emergency Stop}
 \paragraph{}
-To E-Stop a robot, the FMS sends a STATE\_UPDATE message to the target robot, which updates its state to E-STOPPED.
+To E-Stop a robot, the \acrshort{fms} sends a STATE\_UPDATE message to the target robot, which updates its state to E-STOPPED.
 An E-STOPPED robot should stop all of its motors,
 return to the default position, and ignore or respond with failure to all further messages until re-initialized.
 
@@ -209,7 +219,7 @@ Data: The data which this packet carries, which must be <Message Length> - 2 wor
 \paragraph{}
 Init packets are sent as part of the initialization handshake between a starting up robot and the FMS.  
 As such it contains information necessary to uniquely identify a robot.  
-Since the FMS replies to an INIT packet from the robot with an empty INIT packet, all fields except the header are optional.  
+Since the \acrshort{fms} replies to an INIT packet from the robot with an empty INIT packet, all fields except the header are optional.  
 If a field is not used, the word containing it should not be included in the message 
 (which must be indicated in the header’s Message Length field.)
 \newline
@@ -372,23 +382,23 @@ These packets contatin arbitrary data about the state of the message sender.
 
 State Code: An integer value signifying the state of the sender.  Valid codes are shown in Table \ref{tab:StateCodes}.
 
-%TODO a lot of these don't describe how the FMS handles states this table says it's allowed to be in.
+%TODO a lot of these don't describe how the \acrshort{fms} handles states this table says it's allowed to be in.
 %That should be fixed
 \begin{table}[h!]
     \centering
     \label{tab:StateCodes}
-    \caption{Robot and FMS States and Codes}
+    \caption{Robot and \acrshort{fms} States and Codes}
     \begin{tabular}{|c|p{1cm}|p{3in}|c|}
         \hline
-        State Name & Code & Meaning & FMS or Robot? \\
+        State Name & Code & Meaning & \acrshort{fms} or Robot? \\
         \hline
         INITIALIZED & 0x00 & The robot has been initialized but not configured (See the Initialization sequence) & Robot \\
         \hline
         DISABLED & 0x01 & The robot is disabled and should not take action based on or be sent any USER\_DATA packets. & Robot/FMS\\
         \hline
-        ENABLED & 0x02 & The robot is enabled and should react to USER\_DATA packets. & Robot/FMS \\
+        ENABLED & 0x02 & The robot is enabled and should react to USER\_DATA packets. & Robot/\acrshort{fms} \\
         \hline
-        E-STOPPED & 0xFF & The robot has been E-STOPPED and should not respond to any further packets except with error messages. & Robot/FMS \\
+        E-STOPPED & 0xFF & The robot has been E-STOPPED and should not respond to any further packets except with error messages. & Robot/\acrshort{fms} \\
         \hline
     \end{tabular}
 \end{table}
@@ -397,7 +407,7 @@ Arbitrary Data: User-defined data which may be used or ignored by either the rob
 
 \subsection {STATE\_UPDATE Packets}
 \paragraph{}
-These packets are sent when the FMS wishes to update the state of a robot.
+These packets are sent when the \acrshort{fms} wishes to update the state of a robot.
 \newline
 \begin{table}[h!]
     \centering
@@ -840,12 +850,12 @@ Number of Config Entries: The current number of configuration entries the robot 
 Arbitrary Data: Whatever data the programmer sees fit to send in a debug message to the reciever.\\
 Unused:  Unused padding bits to align the message to a 32 bit word.\\
 
+\clearpage
 
+\printglossary
+\printglossary[type=\acronymtype]
 % If you need a bibliography for your document, add it here
 %\begin{thebibliography}{9}
 %\end{thebibliography}
 
 \end{document}
-
-
-
