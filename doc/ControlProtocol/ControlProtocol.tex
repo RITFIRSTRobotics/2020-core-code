@@ -61,7 +61,7 @@ Each packet type has a numerical value which is included in the packet header to
 The valid packet types, their encoded values, their intended purpose, 
 and the network protocol which should be used to send them is shown in Table \ref{tab:pktTypes}.
 
-\begin{table}[h]
+\begin{table}[h!]
     \centering
     \caption{Packet categories and their purpose}
     \label{tab:pktTypes}
@@ -147,7 +147,7 @@ Packets may be sent via either UDP or TCP, and robots should implement listeners
 Each packet contains a header with the message type (which determines how the robot should unpack the data in the packet),
 and message length, and a timestamp.
 \newline
-\begin{table}[h]
+\begin{table}[h!]
     \centering
     \label{tab:headerDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
@@ -212,7 +212,7 @@ Since the FMS replies to an INIT packet from the robot with an empty INIT packet
 If a field is not used, the word containing it should not be included in the message 
 (which must be indicated in the header’s Message Length field.)
 \newline
-\begin{table}[h]
+\begin{table}[h!]
     \centering
     \label{tab:InitDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
@@ -266,7 +266,7 @@ Robot UUID: A unique identifier for the robot which MAY NOT conflict with any ot
 \paragraph{}
 State request packets are empty except for the standard header with the appropriate information.
 \newline
-\begin{table}[h]
+\begin{table}[h!]
     \centering
     \label{tab:stateReqestDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
@@ -316,7 +316,7 @@ State request packets are empty except for the standard header with the appropri
 \paragraph{}
 These packets contatin arbitrary data about the state of the message sender.
 \newline
-\begin{table}[h]
+\begin{table}[h!]
     \centering
     \label{tab:stateResponseDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
@@ -370,7 +370,7 @@ State Code: An integer value signifying the state of the sender.  Valid codes ar
 
 %TODO a lot of these don't describe how the FMS handles states this table says it's allowed to be in.
 %That should be fixed
-\begin{table}[b]
+\begin{table}[h!]
     \centering
     \label{tab:StateCodes}
     \caption{Robot and FMS States and Codes}
@@ -395,7 +395,7 @@ Arbitrary Data: User-defined data which may be used or ignored by either the rob
 \paragraph{}
 These packets are sent when the FMS wishes to update the state of a robot.
 \newline
-\begin{table}[h]
+\begin{table}[h!]
     \centering
     \label{tab:stateUpdateDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
@@ -452,7 +452,7 @@ Arbitrary data: User-defined data which may be used or ignored by either the rob
 \paragraph{}
 These packets are sent by any agent to request a config value or values of another.
 \newline
-\begin{table}[h]
+\begin{table}[h!]
     \centering
     \label{tab:configRequestDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
@@ -512,7 +512,7 @@ Unused: Padding bytes to make the packet aligned to a 32-bit boundary
 \paragraph{}
 These packets are sent in response to a CONFIG\_REQUEST packet and contains the reqeusted configuration keys.
 \newline
-\begin{table}[h]
+\begin{table}[h!]
     \centering
     \label{tab:configResponseDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
@@ -573,7 +573,7 @@ Unused:  Padding bytes to force packet alignment to a 32 bit word.
 \paragraph{}
 An agent sends this packet to attempt to change the configuration of another agent.
 \newline
-\begin{table}[h]
+\begin{table}[h!]
     \centering
     \label{tab:configUpdateDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
@@ -633,7 +633,7 @@ Unused:  Padding bytes to force packet alignment to a 32 bit word.
 \subsection {USER\_DATA Packets}
 \paragraph{}
 USER\_DATA Packets contain data from the human controller.
-\begin{table}[h]
+\begin{table}[h!]
     \centering
     \label{tab:userDataDef}
     \begin{tabular}{|p{1cm}|p{0.04cm}|p{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
@@ -679,7 +679,7 @@ USER\_DATA Packets contain data from the human controller.
         2 & \multicolumn{8}{c|}{Left Joystick X} & \multicolumn{8}{c|}{Left Joystick Y} & 
             \multicolumn{8}{c|}{Right Joystick X} & \multicolumn{8}{c|}{Right Joystick Y} \\
         \hline
-        3 & A & B & \multicolumn{14}{c|}{\cellcolor[gray]{.6} Reserved} & \multicolumn{16}{c|}{Controller UUID} \\
+        3 &A&B& \multicolumn{14}{c|}{\cellcolor[gray]{.6} Reserved} & \multicolumn{16}{c|}{Controller UUID} \\
         \hline
     \end{tabular}
 \end{table}
@@ -695,7 +695,7 @@ Controller UID: A universally unique ID for this controller.
 \subsection {UPDATE\_STATUS Packets}
 \paragraph{}
 USER\_DATA Packets contain data from the human controller.
-\begin{table}[h]
+\begin{table}[h!]
     \centering
     \label{tab:updateStatusDef}
     \begin{tabular}{|p{1cm}|p{0.04cm}|p{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
@@ -746,7 +746,7 @@ USER\_DATA Packets contain data from the human controller.
 Status Code: The result of the last received UPDATE\_* type packet.
 Table \ref{tab:updateStatusCodes} summarizes valid codes.
 
-\begin{table}[h]
+\begin{table}[h!]
     \centering
     \label{tab:updateStatusCodes}
     \begin{tabular}{|p{2in}|p{.8in}|p{3.25in}|}
@@ -764,9 +764,9 @@ Table \ref{tab:updateStatusCodes} summarizes valid codes.
 \end{table}
 
 \subsection{DEBUG Packets}
-\begin{table}[h]
+\begin{table}[h!]
     \centering
-    \label{tab:updateStatusDef}
+    \label{tab:debugDef}
     \begin{tabular}{|p{1cm}|p{0.04cm}|p{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
@@ -807,10 +807,27 @@ Table \ref{tab:updateStatusCodes} summarizes valid codes.
         \hline
         [0,1] & \multicolumn{32}{c|}{Header}\\
         \hline
-        2 & \multicolumn{32}{c|}{Status Code}\\
+        2 & \multicolumn{32}{c|}{Git Commmit Hash}\\
+        \hline
+        3 & \multicolumn{32}{c|}{Robot UUID}\\
+        \hline
+        4 & \multicolumn{8}{c|}{Robot State} & \multicolumn{8}{c|}{\cellcolor[gray]{.6}Reserved}&
+            \multicolumn{16}{c|}{Number of config Entries}\\
+        \hline
+        ... & \multicolumn{32}{c|}{Arbitrary Data}\\
+        \hline
+        n & \multicolumn{16}{c|}{Arbitrary Data (Cont)} & \multicolumn{16}{c|}{\cellcolor[gray]{.6}Unused}\\
         \hline
     \end{tabular}
 \end{table}
+Git Commit Hash: The hash of the current git commit of the software running on the sender.
+The hash should be inserted into the code at compile time (i.e. using a makefile)\\
+Robot UUID: A unique identifier for the robot which MAY NOT conflict with any other robots on the field.\\
+Robot State: The current state of the robot (see the *\_STATE message definitions for a more complete description)\\
+Number of Config Entries: The current number of configuration entries the robot has\\
+Arbitrary Data: Whatever data the programmer sees fit to send in a debug message to the reciever.\\
+Unused:  Unused padding bits to align the message to a 32 bit word.\\
+
 
 % If you need a bibliography for your document, add it here
 %\begin{thebibliography}{9}
