@@ -11,10 +11,10 @@ if ! [ -x "$(command -v valgrind)" ]; then
     sudo apt-get update -qq && sudo apt-get install -y valgrind criterion-dev
 fi
 
-if ! [ -x "$(command -v pdflatex)" ]; then
-	sudo apt-get install texlive-latex-base texlive-fonts-recommended \
-		texlive-fonts-extra texlive-latex-extra
-fi
+#if ! [ -x "$(command -v pdflatex)" ]; then
+#	sudo apt-get install texlive-latex-base texlive-fonts-recommended \
+#		texlive-fonts-extra texlive-latex-extra
+#fi
 
 # make sure lib directory exists
 if ! test -d "lib"; then
