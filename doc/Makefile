@@ -1,6 +1,11 @@
 LATEX_TMP_EXT=*.acn *.aux *.sympy *.toc *.glg *.gls *.ist *.glo *.acr *.alg
 LATEX_OUT_EXT=*.log *.pdf
 
+ci-all: ControlProtocol Template
+
+ci-test:
+	echo "No tests to be run"
+
 ControlProtocol: ControlProtocol.pdf
 
 Template: Template.pdf
