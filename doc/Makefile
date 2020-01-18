@@ -6,11 +6,9 @@ ControlProtocol: ControlProtocol.pdf
 
 Template: Template.pdf
 
-ci-all: 
-	echo "Skipping build to save CI Time"
+ci-build: ControlProtocol Template
 
-ci-test:
-	echo "No tests to be run"
+ci-test: ; # do nothing
 
 Template.pdf: Template.aux
 	pdflatex -halt-on-error Template.tex

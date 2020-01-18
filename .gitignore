@@ -13,6 +13,8 @@ tmp/
 massif.out.*
 
 # ./configure output
+/config.onpush
+/config.full
 /Makefile
 
 # library files

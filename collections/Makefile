@@ -59,8 +59,8 @@ test: $(TEST_OBJ_DIR)/arraylist.o $(TEST_OBJ_DIR)/linkedlist.o $(TEST_OBJ_DIR)/l
 
 ### CI testing stuff
 
-ci-all: $(TEST_OBJ_DIR)/arraylist.o $(TEST_OBJ_DIR)/linkedlist.o $(TEST_OBJ_DIR)/list.o \
-	    $(TEST_OBJ_DIR)/stack.o $(TEST_OBJ_DIR)/queue.o
+ci-build: $(TEST_OBJ_DIR)/arraylist.o $(TEST_OBJ_DIR)/linkedlist.o $(TEST_OBJ_DIR)/list.o \
+	$(TEST_OBJ_DIR)/stack.o $(TEST_OBJ_DIR)/queue.o
 
 ci-test: test
 
