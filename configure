@@ -33,7 +33,7 @@ do
 
     # if there's a makefile, save it
     if test -f "${dir}/Makefile"; then
-        dirs+=${dir}
+		dirs+=(${dir})
     fi
 done
 
