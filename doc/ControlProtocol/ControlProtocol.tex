@@ -51,7 +51,7 @@
 \numberwithin{equation}{subsection}
 \numberwithin{figure}{subsection}
 
-\title{Imagine Project Control Protocol}
+\title{ImagineBots Control Protocol}
 \author{Alex Kneipp}
 \date{YYYY-MM-DD}
 \maketitle
@@ -112,6 +112,7 @@ and the network protocol which should be used to send them is shown in Table \re
 Upon boot up, a robot connects to the robot network and makes an INIT request containing its \acrfull{uuid} to the \acrfull{fms} 
 (The \acrshort{fms} network address must be configured in the robot configuration before startup.) 
 The \acrshort{fms} then responds to the robot with an empty INIT message. 
+The robot should synchronize it's program time to the timestamp in the INIT message from the \acrshort{fms}.
 The \acrshort{fms} then sends a CONFIG\_UDPATE message to the robot which configures it for a controller connected 
 to the \acrshort{fms} and the alliance color corresponding to the controller it received. 
 \paragraph{}
@@ -146,6 +147,7 @@ all of the robots it has successfully initialized to DISABLED.
 To E-Stop a robot, the \acrshort{fms} sends a STATE\_UPDATE message to the target robot, which updates its state to E-STOPPED.
 An E-STOPPED robot should stop all of its motors,
 return to the default position, and ignore or respond with failure to all further messages until re-initialized.
+A robot may be emergency stopped at any time.
 
 \section {Packet Structures}
 \paragraph{}
@@ -210,9 +212,8 @@ and message length, and a timestamp.
 \clearpage
 Message Type: Denotes the type of message contained in this packet, see Table 1 for more information.\\
 Message Length: The length of the message, including the header, in bytes.
-Timestamp: A Unix timestamp (the number of seconds that have elapsed since the Unix epoch, 
-that is the time 00:00:00 UTC on 1 January 1970, minus leap seconds), 
-in the format of a single precision IEEE floating point number.\\
+Timestamp: The time, in milliseconds, since the \acrshort{fms} has started, stored as a 32 bit unsigned integer.
+Robots should update their timestamp to match that of the \acrshort{fms} when they recieve their initialization packet.\\
 Data: The data which this packet carries, which must be <Message Length> - 2 words long.\\
 
 \subsection {INIT Packets}
@@ -271,8 +272,8 @@ If a field is not used, the word containing it should not be included in the mes
         \hline
     \end{tabular}
 \end{table}
-Robot UUID: A unique identifier for the robot which MAY NOT conflict with any other robots on the field.
 
+Robot UUID: A unique identifier for the robot which MAY NOT conflict with any other robots on the field.
 
 \subsection {STATE\_REQUEST Packets}
 \paragraph{}
@@ -707,8 +708,8 @@ Left Joystick X: The X axis of the left joystick on the controller.  An unsigned
 Left Joystick Y: The Y axis of the left joystick on the controller.  An unsigned integer value from 0 to 255.\\
 Right Joystick X: The X axis of the right joystick on the controller.  An unsigned integer value from 0 to 255.\\
 Right Joystick Y: The Y axis of the right joystick on the controller.  An unsigned integer value from 0 to 255.\\
-A: The current state of button “A” (<which button?>).  0 is unpressed, 1 is pressed.\\
-B: The current state of button “B” (<which button?>).  0 is unpressed, 1 is pressed.\\
+A: The current state of button “A” (which button?).  0 is unpressed, 1 is pressed.\\
+B: The current state of button “B” (which button?).  0 is unpressed, 1 is pressed.\\
 Controller UID: A universally unique ID for this controller.
 
 \subsection {UPDATE\_STATUS Packets}
@@ -829,7 +830,7 @@ Table \ref{tab:updateStatusCodes} summarizes valid codes.
         \hline
         [0,1] & \multicolumn{32}{c|}{Header}\\
         \hline
-        2 & \multicolumn{32}{c|}{Git Commmit Hash}\\
+        2 & \multicolumn{32}{c|}{Git Commit Hash}\\
         \hline
         3 & \multicolumn{32}{c|}{Robot UUID}\\
         \hline
@@ -842,7 +843,7 @@ Table \ref{tab:updateStatusCodes} summarizes valid codes.
         \hline
     \end{tabular}
 \end{table}
-Git Commit Hash: The hash of the current git commit of the software running on the sender.
+Git Commit Hash: The hash of the current git commit of the FMS or Robot code (not core code) running on the sender.
 The hash should be inserted into the code at compile time (i.e. using a makefile)\\
 Robot UUID: A unique identifier for the robot which MAY NOT conflict with any other robots on the field.\\
 Robot State: The current state of the robot (see the *\_STATE message definitions for a more complete description)\\
