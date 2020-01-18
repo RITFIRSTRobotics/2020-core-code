@@ -111,7 +111,7 @@ and the network protocol which should be used to send them is shown in Table \re
 \paragraph{}
 Upon boot up, a robot connects to the robot network and makes an INIT request containing its \acrfull{uuid} to the \acrfull{fms} 
 (The \acrshort{fms} network address must be configured in the robot configuration before startup.) 
-The \acrshort{fms} then responds to the robot with an empty INIT message. 
+The \acrshort{fms} then responds to the robot with an INIT message with a \acrshort{uuid} of all zeros. 
 The robot should synchronize it's program time to the timestamp in the INIT message from the \acrshort{fms}.
 The \acrshort{fms} then sends a CONFIG\_UDPATE message to the robot which configures it for a controller connected 
 to the \acrshort{fms} and the alliance color corresponding to the controller it received. 
@@ -148,6 +148,8 @@ To E-Stop a robot, the \acrshort{fms} sends a STATE\_UPDATE message to the targe
 An E-STOPPED robot should stop all of its motors,
 return to the default position, and ignore or respond with failure to all further messages until re-initialized.
 A robot may be emergency stopped at any time.
+
+\clearpage
 
 \section {Packet Structures}
 \paragraph{}
@@ -209,7 +211,6 @@ and message length, and a timestamp.
         \hline
     \end{tabular}
 \end{table}
-\clearpage
 Message Type: Denotes the type of message contained in this packet, see Table 1 for more information.\\
 Message Length: The length of the message, including the header, in bytes.
 Timestamp: The time, in milliseconds, since the \acrshort{fms} has started, stored as a 32 bit unsigned integer.
@@ -220,9 +221,6 @@ Data: The data which this packet carries, which must be <Message Length> - 2 wor
 \paragraph{}
 Init packets are sent as part of the initialization handshake between a starting up robot and the FMS.  
 As such it contains information necessary to uniquely identify a robot.  
-Since the \acrshort{fms} replies to an INIT packet from the robot with an empty INIT packet, all fields except the header are optional.  
-If a field is not used, the word containing it should not be included in the message 
-(which must be indicated in the header’s Message Length field.)
 \newline
 \begin{table}[h!]
     \centering
@@ -374,7 +372,7 @@ These packets contatin arbitrary data about the state of the message sender.
         \hline
         [0,1] & \multicolumn{32}{c|}{Header}\\
         \hline
-        2 & \multicolumn{32}{c|}{State Code} \\
+        2 & \multicolumn{8}{c|}{State Code} & \multicolumn{24}{c|}{\cellcolor[gray]{.6}Reserved} \\
         \hline
         3..n & \multicolumn{32}{c|}{Arbitrary Data} \\
         \hline
@@ -454,14 +452,15 @@ These packets are sent when the \acrshort{fms} wishes to update the state of a r
         \hline
         [0,1] & \multicolumn{32}{c|}{Header}\\
         \hline
-        2 & \multicolumn{32}{c|}{State Code} \\
+        2 & \multicolumn{8}{c|}{New State Code} & \multicolumn{24}{c|}{\cellcolor[gray]{.6}Reserved} \\
         \hline
         3..n & \multicolumn{32}{c|}{Arbitrary Data} \\
         \hline
     \end{tabular}
 \end{table}
 
-State Code: An integer value signifying the state of the robot or FMS.  Valid codes are shown in Table \ref{tab:StateCodes}\\
+New State Code: An integer value signifying the state the robot or FMS should change to.
+Valid codes are shown in Table \ref{tab:StateCodes}\\
 Arbitrary data: User-defined data which may be used or ignored by either the robot or FMS.
 
 \subsection {CONFIG\_REQUEST Packets}
