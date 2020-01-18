@@ -864,10 +864,16 @@ configuration, which must be sent over in the CONFIG\_UPDATE packet as part of t
 
 \paragraph{}
 If disconnect detection is disabled and a robot is rebooted, it will send an INIT packet to the \acrshort{fms}.
-In order to correctly handle this situation, the \acrshort{fms} must keep the UUID of all robots, 
+In order to correctly handle this situation, the \acrshort{fms} must keep the \acrshort{uuid} of all robots, 
 and if it sees an INIT packet from a robot it has already initialized, 
 it should re-initialize the robot with the same paramaters the robot already had, rather
 than generating a new set of paramaters.
+
+\subsection{Emergency Stop}
+\paragraph{}
+If the robot or entire field has been emergency stopped by a user, the e-stopped component must be fully rebooted.
+After rebooting, the Robot Disconnection failure mode should be followed if the component was a robot.  
+If the field was stopped, each robot should also be rebooted and the field should be started as usual.
 
 \clearpage
 
