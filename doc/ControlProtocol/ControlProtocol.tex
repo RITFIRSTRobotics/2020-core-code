@@ -41,7 +41,7 @@
 \newacronym{udp}{UDP}{User Datagram Protocol}
 \newacronym{uuid}{UUID}{Unique Universal ID}
 \newacronym{fms}{FMS}{Field Management System}
-\newacronym{asc}{ASC}{TODO get this from Connor}
+\newacronym{asc}{ASC}{Arduino Scoring and Control}
 
 % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
 
@@ -849,6 +849,25 @@ Robot State: The current state of the robot (see the *\_STATE message definition
 Number of Config Entries: The current number of configuration entries the robot has\\
 Arbitrary Data: Whatever data the programmer sees fit to send in a debug message to the reciever.\\
 Unused:  Unused padding bits to align the message to a 32 bit word.\\
+
+\clearpage
+
+\section{Failure Modes}
+\subsection{Robot Disconnection}
+\paragraph{}
+The \acrshort{fms} should regularly send STATE\_REQUEST packets to each robot it has Initialized 
+in order to detect if the robot has been disconnected.  If a robot has been disconnected, 
+it must be reinitialized by the \acrshort{fms}.
+As such, robots should respond to a STATE\_REQUEST packet as soon as possible, and should monitor incoming STATE\_UPDATE packets
+so they can also tell if they have been disconnected.  This functionality may be disabled by a value in the \acrshort{fms}
+configuration, which must be sent over in the CONFIG\_UPDATE packet as part of the initialization sequence.
+
+\paragraph{}
+If disconnect detection is disabled and a robot is rebooted, it will send an INIT packet to the \acrshort{fms}.
+In order to correctly handle this situation, the \acrshort{fms} must keep the UUID of all robots, 
+and if it sees an INIT packet from a robot it has already initialized, 
+it should re-initialize the robot with the same paramaters the robot already had, rather
+than generating a new set of paramaters.
 
 \clearpage
 
