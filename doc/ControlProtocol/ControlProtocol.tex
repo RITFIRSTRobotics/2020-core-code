@@ -82,10 +82,11 @@ and the network protocol which should be used to send them is shown in Table \re
         \hline
         STATE\_REQUEST & 0x10 & A request for the recipient to respond with their current state. & \acrshort{tcp} \\
         \hline
-        STATE\_UPDATE & 0x12 & The current state of the sender. 
-        Sent periodically or in response to a STATE\_REQUEST message. & \acrshort{tcp} \\
+        STATE\_RESPONSE & 0x11 & The current state of the sender. Sent periodically or in response to a STATE\_REQUEST message. & \acrshort{tcp} \\
         \hline
-        CONFIG\_REQUEST & 0x20 & A request that the recipient responds with their current configuration. & \acrshort{tcp} \\
+        STATE\_UPDATE & 0x12 & A request for the recipient to update their state according to the data contained in the message. & \acrshort{tcp} \\
+        \hline
+        CONFIG\_REQUEST & 0x20 & A request for the recipient responds with their current configuration. & \acrshort{tcp} \\
         \hline
         CONFIG\_RESPONSE & 0x21 & Sent in response to a CONFIG\_REQUEST message; 
             includes data about the senders configuration. & \acrshort{tcp} \\
@@ -578,7 +579,7 @@ These packets are sent in response to a CONFIG\_REQUEST packet and contains the 
 \newline
 Key-value list: A semi-colon (;) separated list of key-value pairs representing the configuration values to 
 update or create on the reciever.
-Each key is a nul-terminated string immediately followed by a TLV structure signifying the value of the configuration value.
+Each key is a nul-terminated string immediately followed by a TLV structure (defined in Table \ref{tab:TLVDef}) signifying the value of the configuration value.
 Valid TLV types are defined in Table \ref{tab:configTypes}.
 Unused: Padding bytes to force packet alignment to a 32-bit word.
 
@@ -937,21 +938,21 @@ each of the packets individually define the valid types for their data.
         \hline
         [0,1] & \multicolumn{32}{c|}{Header}\\
         \hline
-        ... & \multicolumn{32}{c|}{Arbitrary Data}\\
+        ... & \multicolumn{32}{c|}{\cellcolor[gray]{.6}Miscellaneous Data}\\
         \hline
         n & \multicolumn{8}{c|}{Value Type} & \multicolumn{24}{c|}{Value Length}\\
         \hline
-        n + 1 & \multicolumn{32}{c|}{Arbitrary Data}\\
+        n+1 & \multicolumn{32}{c|}{Value Data}\\
         \hline
-        n + m & \multicolumn{16}{c|}{Arbitrary Data (Cont)} & \multicolumn{16}{c|}{\cellcolor[gray]{.6}...}\\
+        n+m & \multicolumn{16}{c|}{Value Data (Cont.)} & \multicolumn{16}{c|}{\cellcolor[gray]{.6}Misc. Data}\\
         \hline
     \end{tabular}
 \end{table}
 
 
-Value Type: Type of the data in this structure, defined on a per-application basis.\\
-Value Length: The length of the entire structure in bytes.  Stored in an unsigned integer.\\
-Arbitrary Data: The value stored in this TLV. TLVs need not be aligned to a 32-bit word, but should be aligned to the byte.
+Value Type: Type of the data in this structure, defined on a per-application basis. \\
+Value Length: The length of the entire structure in bytes.  Stored in an unsigned integer. \\
+Value Data: The value stored in this TLV. TLVs need not be aligned to a 32-bit word, but should be aligned to the byte. \\
 
 \clearpage
 
