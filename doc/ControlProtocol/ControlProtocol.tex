@@ -28,10 +28,10 @@
 % % % % % % % % % % %EDIT THIS % % % % % % % % % % % % % % % % % % % %
 \pagestyle{fancy}
 \fancyhf{}
-\lhead{Imagine Project Control Protocol}
+\lhead{ImagineBots Control Protocol}
 \rhead{Alex Kneipp}
 \lfoot{RIT FIRST Alumni Association}
-\cfoot{YYYY-MM-DD}
+\cfoot{2020-01-18}
 \rfoot{Page \thepage}
 % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
 % % % % % % % % % % % %Glossary Setup % %% % % % %
@@ -53,7 +53,7 @@
 
 \title{ImagineBots Control Protocol}
 \author{Alex Kneipp}
-\date{YYYY-MM-DD}
+\date{2020-01-18}
 \maketitle
 
 \hspace{1in}
@@ -873,7 +873,7 @@ Unused:  Unused padding bits to align the message to a 32 bit word.\\
 \section{Failure Modes}
 \subsection{Robot Disconnection}
 \paragraph{}
-The \acrshort{fms} should regularly send STATE\_REQUEST packets to each robot it has Initialized 
+The \acrshort{fms} should regularly (about every 5s) send STATE\_REQUEST packets to each robot it has Initialized 
 in order to detect if the robot has been disconnected.  If a robot has been disconnected, 
 it must be reinitialized by the \acrshort{fms}.
 As such, robots should respond to a STATE\_REQUEST packet as soon as possible, and should monitor incoming STATE\_UPDATE packets
