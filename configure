@@ -24,8 +24,8 @@ if ! [ -x "$(command -v pdflatex)" ] && test -e "config.full"; then
     sudo apt-get update -qq && sudo apt-get install -y miktex
 
     # Setup MiKTeX and enable auto-package installation
-    miktexsetup finish && initexmf --set-config-value [MPM]AutoInstall=1
-    mpm --update-db # update database, should fix auto-package installation
+    sudo miktexsetup --shared=yes finish && sudo initexmf --admin --set-config-value [MPM]AutoInstall=1
+    sudo mpm --admin --update-db # update database, should fix auto-package installation
 fi
 
 # make sure lib directory exists
