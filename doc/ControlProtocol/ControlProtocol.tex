@@ -85,7 +85,7 @@ and the network protocol which should be used to send them is shown in Table \re
         STATE\_UPDATE & 0x12 & The current state of the sender. 
         Sent periodically or in response to a STATE\_REQUEST message. & \acrshort{tcp} \\
         \hline
-        CONFIG\_REQUEST & 0x20 & A request the that the recipient respond with their current configuration. & \acrshort{tcp} \\
+        CONFIG\_REQUEST & 0x20 & A request that the recipient responds with their current configuration. & \acrshort{tcp} \\
         \hline
         CONFIG\_RESPONSE & 0x21 & Sent in response to a CONFIG\_REQUEST message; 
             includes data about the senders configuration. & \acrshort{tcp} \\
@@ -143,17 +143,13 @@ all of the robots it has successfully initialized to DISABLED.
 
 \subsection{Emergency Stop}
 \paragraph{}
-To E-Stop a robot, the \acrshort{fms} sends a STATE\_UPDATE message to the target robot, which updates its state to E-STOPPED.
-An E-STOPPED robot should stop all of its motors,
-return to the default position, and ignore or respond with failure to all further messages until re-initialized.
-A robot may be emergency stopped at any time.
-
-\clearpage
+To emergency stop (e-stop) a robot, the \acrshort{fms} sends a STATE\_UPDATE message to the target robot, which updates its state to E-STOPPED.
+This packet can be sent at any time after a robot is initialized. An E-STOPPED robot should turn off all of its motors 
+and ignore or respond with failure to all further messages until re-initialized.
 
 \section {Packet Structures}
 \paragraph{}
-The robot control packets used for controlling RIT FIRST imagine robots generally follow a Type-Length-Value (TLV) structure.
-Packets may be sent via either UDP or TCP, and robots should implement listeners for both protocols.
+The robot control packets generally follow a Type-Length-Value (TLV) structure. Packets may be sent via either UDP or TCP (depending on the type of the packet), and robots should implement listeners for both protocols.
 
 \subsection {Packet Header}
 \paragraph{}
@@ -214,11 +210,11 @@ Message Type: Denotes the type of message contained in this packet, see Table 1 
 Message Length: The length of the message, including the header, in bytes.
 Timestamp: The time, in milliseconds, since the \acrshort{fms} has started, stored as a 32 bit unsigned integer.
 Robots should update their timestamp to match that of the \acrshort{fms} when they recieve their initialization packet.\\
-Data: The data which this packet carries, which must be <Message Length> - 2 words long.\\
+Data: The data which this packet carries, which must be $Message Length - 2$ words long.\\
 
 \subsection {INIT Packets}
 \paragraph{}
-Init packets are sent as part of the initialization handshake between a starting up robot and the FMS.  
+Initialization packets are sent as part of the initialization handshake between a starting up robot and the FMS.  
 As such it contains information necessary to uniquely identify a robot.  
 \newline
 \begin{table}[h!]
@@ -460,7 +456,7 @@ These packets are sent when the \acrshort{fms} wishes to update the state of a r
 
 New State Code: An integer value signifying the state the robot or FMS should change to.
 Valid codes are shown in Table \ref{tab:StateCodes}\\
-Arbitrary data: User-defined data which may be used or ignored by either the robot or FMS.
+Arbitrary Data: User-defined data which may be used or ignored by either the robot or FMS.
 
 \subsection {CONFIG\_REQUEST Packets}
 \paragraph{}
@@ -519,7 +515,7 @@ These packets are sent by any agent to request a config value or values of anoth
     \end{tabular}
 \end{table}
 \newline
-Keys list:  A sequence of nul-terminated strings which represent the configuration keys of the receiving agent.
+Keys List:  A sequence of nul-terminated strings which represent the configuration keys of the receiving agent.
 It may be the special keyword “ALL”, which tells the receiving agent to respond with their entire configuration.\\
 Unused: Padding bytes to make the packet aligned to a 32-bit boundary
 
@@ -575,7 +571,7 @@ These packets are sent in response to a CONFIG\_REQUEST packet and contains the 
         \cline{1-1}
         ... & \multicolumn{32}{c|}{}\\
         \hline
-        n & \multicolumn{16}{c|}{Keys-value List (cont)} & \multicolumn{16}{c|}{\cellcolor[gray]{.6}Unused} \\
+        n & \multicolumn{16}{c|}{Key-value List (cont)} & \multicolumn{16}{c|}{\cellcolor[gray]{.6}Unused} \\
         \hline
     \end{tabular}
 \end{table}
@@ -583,8 +579,8 @@ These packets are sent in response to a CONFIG\_REQUEST packet and contains the 
 Key-value list: A semi-colon (;) separated list of key-value pairs representing the configuration values to 
 update or create on the reciever.
 Each key is a nul-terminated string immediately followed by a TLV structure signifying the value of the configuration value.
-Valid TLV types are defined in table{tab:configTypes}.
-Unused:  Padding bytes to force packet alignment to a 32 bit word.
+Valid TLV types are defined in Table \ref{tab:configTypes}.
+Unused: Padding bytes to force packet alignment to a 32-bit word.
 
 \begin{table}[h!]
     \centering
@@ -668,7 +664,7 @@ Key-value list: A semi-colon (;) separated list of key-value pairs representing 
 update or create on the reciever.
 Each key is a nul-terminated string immediately followed by a TLV structure signifying the value of the configuration value.
 Valid types for the TLV structure are defined in table \ref{tab:configTypes}.
-Unused:  Padding bytes to force packet alignment to a 32 bit word.
+Unused:  Padding bytes to force packet alignment to a 32-bit word.
 
 \subsection {USER\_DATA Packets}
 \paragraph{}
@@ -857,7 +853,7 @@ Table \ref{tab:updateStatusCodes} summarizes valid codes.
         3 & \multicolumn{32}{c|}{Robot UUID}\\
         \hline
         4 & \multicolumn{8}{c|}{Robot State} & \multicolumn{8}{c|}{\cellcolor[gray]{.6}Reserved}&
-            \multicolumn{16}{c|}{Number of config Entries}\\
+            \multicolumn{16}{c|}{Number of Config Entries}\\
         \hline
         ... & \multicolumn{32}{c|}{Arbitrary Data}\\
         \hline
@@ -893,7 +889,7 @@ Unused:  Unused padding bits to align the message to a 32 bit word.\\
 \subsection {TLV Structure}
 \paragraph{}
 Several packets contain general purpose TLV (Type, Length, Value) structures.
-The general structure of them is defined in table \ref{tab:TLVDef};
+The general structure of them is defined in Table \ref{tab:TLVDef};
 each of the packets individually define the valid types for their data.
 \newline
 
@@ -941,17 +937,19 @@ each of the packets individually define the valid types for their data.
         \hline
         [0,1] & \multicolumn{32}{c|}{Header}\\
         \hline
-        2 & \multicolumn{8}{c|}{Value Type} & \multicolumn{24}{c|}{Value Length}\\
-        \hline
         ... & \multicolumn{32}{c|}{Arbitrary Data}\\
         \hline
-        n & \multicolumn{16}{c|}{Arbitrary Data (Cont)} & \multicolumn{16}{c|}{\cellcolor[gray]{.6}...}\\
+        n & \multicolumn{8}{c|}{Value Type} & \multicolumn{24}{c|}{Value Length}\\
+        \hline
+        n + 1 & \multicolumn{32}{c|}{Arbitrary Data}\\
+        \hline
+        n + m & \multicolumn{16}{c|}{Arbitrary Data (Cont)} & \multicolumn{16}{c|}{\cellcolor[gray]{.6}...}\\
         \hline
     \end{tabular}
 \end{table}
 
 
-Value Type: Type of the data in this structure.  Defined on a per-application basis.\\
+Value Type: Type of the data in this structure, defined on a per-application basis.\\
 Value Length: The length of the entire structure in bytes.  Stored in an unsigned integer.\\
 Arbitrary Data: The value stored in this TLV. TLVs need not be aligned to a 32-bit word, but should be aligned to the byte.
 
