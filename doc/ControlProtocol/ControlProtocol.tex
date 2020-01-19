@@ -42,7 +42,6 @@
 \newacronym{uuid}{UUID}{Unique Universal ID}
 \newacronym{fms}{FMS}{Field Management System}
 \newacronym{asc}{ASC}{Arduino Scoring and Control}
-
 % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
 
 \begin{document}
@@ -163,8 +162,8 @@ and message length, and a timestamp.
 \newline
 \begin{table}[h!]
     \centering
-    \label{tab:headerDef}
     \caption{Structure of the header of all packets}
+    \label{tab:headerDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
@@ -224,8 +223,8 @@ As such it contains information necessary to uniquely identify a robot.
 \newline
 \begin{table}[h!]
     \centering
-    \label{tab:InitDef}
     \caption{Structure of INIT packets}
+    \label{tab:InitDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
@@ -279,8 +278,8 @@ State request packets are empty except for the standard header with the appropri
 \newline
 \begin{table}[h!]
     \centering
-    \label{tab:stateReqestDef}
     \caption{Structure of STATE\_REQUEST packets}
+    \label{tab:stateReqestDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
@@ -330,8 +329,8 @@ These packets contatin arbitrary data about the state of the message sender.
 \newline
 \begin{table}[h!]
     \centering
-    \label{tab:stateResponseDef}
     \caption{Structure of STATE\_RESPONSE packets}
+    \label{tab:stateResponseDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
@@ -385,8 +384,8 @@ State Code: An integer value signifying the state of the sender.  Valid codes ar
 %That should be fixed
 \begin{table}[h!]
     \centering
-    \label{tab:StateCodes}
     \caption{Robot and \acrshort{fms} States and Codes}
+    \label{tab:StateCodes}
     \begin{tabular}{|c|p{1cm}|p{3in}|c|}
         \hline
         State Name & Code & Meaning & \acrshort{fms} or Robot? \\
@@ -410,8 +409,8 @@ These packets are sent when the \acrshort{fms} wishes to update the state of a r
 \newline
 \begin{table}[h!]
     \centering
-    \label{tab:stateUpdateDef}
     \caption{Structure of STATE\_UPDATE packets}
+    \label{tab:stateUpdateDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
@@ -469,8 +468,8 @@ These packets are sent by any agent to request a config value or values of anoth
 \newline
 \begin{table}[h!]
     \centering
-    \label{tab:configRequestDef}
     \caption{Structure of CONFIG\_REQUEST packets}
+    \label{tab:configRequestDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
@@ -530,8 +529,8 @@ These packets are sent in response to a CONFIG\_REQUEST packet and contains the 
 \newline
 \begin{table}[h!]
     \centering
-    \label{tab:configResponseDef}
     \caption{Structure of CONFIG\_RESPONSE packets}
+    \label{tab:configResponseDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
@@ -583,8 +582,30 @@ These packets are sent in response to a CONFIG\_REQUEST packet and contains the 
 \newline
 Key-value list: A semi-colon (;) separated list of key-value pairs representing the configuration values to 
 update or create on the reciever.
-Each key is a nul-terminated string immediately followed by a TLV structure signifying the value of the configuration value.\\
+Each key is a nul-terminated string immediately followed by a TLV structure signifying the value of the configuration value.
+Valid TLV types are defined in table{tab:configTypes}.
 Unused:  Padding bytes to force packet alignment to a 32 bit word.
+
+\begin{table}[h!]
+    \centering
+    \caption{Valid Configuration value types}
+    \label{tab:configTypes}
+    \begin{tabular}{|p{3in}|p{.5in}|}
+        \hline
+        Type & Type Code\\
+        \hline
+        Integer & 0x00\\
+        \hline
+        Float & 0x01\\
+        \hline
+        Double Precision Floating Point & 0x02\\
+        \hline
+        C-String & 0x03\\
+        \hline
+        Boolean & 0x04 \\
+        \hline
+    \end{tabular}
+\end{table}
 
 \subsection {CONFIG\_UPDATE Packets}
 \paragraph{}
@@ -592,8 +613,8 @@ An agent sends this packet to attempt to change the configuration of another age
 \newline
 \begin{table}[h!]
     \centering
-    \label{tab:configUpdateDef}
     \caption{Structure of CONFIG\_UPDATE packets}
+    \label{tab:configUpdateDef}
     \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
@@ -645,7 +666,8 @@ An agent sends this packet to attempt to change the configuration of another age
 \newline
 Key-value list: A semi-colon (;) separated list of key-value pairs representing the configuration values to 
 update or create on the reciever.
-Each key is a nul-terminated string immediately followed by a TLV structure signifying the value of the configuration value.\\
+Each key is a nul-terminated string immediately followed by a TLV structure signifying the value of the configuration value.
+Valid types for the TLV structure are defined in table \ref{tab:configTypes}.
 Unused:  Padding bytes to force packet alignment to a 32 bit word.
 
 \subsection {USER\_DATA Packets}
@@ -653,8 +675,8 @@ Unused:  Padding bytes to force packet alignment to a 32 bit word.
 USER\_DATA Packets contain data from the human controller.
 \begin{table}[h!]
     \centering
-    \label{tab:userDataDef}
     \caption{Structure of USER\_DATA packets}
+    \label{tab:userDataDef}
     \begin{tabular}{|p{1cm}|p{0.04cm}|p{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
@@ -717,8 +739,8 @@ UPDATE\_STATUS packets are sent in response to a CONFIG\_UPDATE or STATE\_UPDATE
 and contain whether or not the update command was successful.
 \begin{table}[h!]
     \centering
-    \label{tab:updateStatusDef}
     \caption{Structure of UPDATE\_STATUS packets}
+    \label{tab:updateStatusDef}
     \begin{tabular}{|p{1cm}|p{0.04cm}|p{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
@@ -769,8 +791,8 @@ Table \ref{tab:updateStatusCodes} summarizes valid codes.
 
 \begin{table}[h!]
     \centering
-    \label{tab:updateStatusCodes}
     \caption{Update status codes and descriptions}
+    \label{tab:updateStatusCodes}
     \begin{tabular}{|p{2in}|p{.8in}|p{3.25in}|}
         \hline
         Status Name & Status Code & Status Description \\
@@ -788,8 +810,8 @@ Table \ref{tab:updateStatusCodes} summarizes valid codes.
 \subsection{DEBUG Packets}
 \begin{table}[h!]
     \centering
-    \label{tab:debugDef}
     \caption{Structure of DEBUG packets}
+    \label{tab:debugDef}
     \begin{tabular}{|p{1cm}|p{0.04cm}|p{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
         m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
@@ -868,6 +890,71 @@ Unused:  Unused padding bits to align the message to a 32 bit word.\\
     \end{tabular}
 \end{table}
 
+\subsection {TLV Structure}
+\paragraph{}
+Several packets contain general purpose TLV (Type, Length, Value) structures.
+The general structure of them is defined in table \ref{tab:TLVDef};
+each of the packets individually define the valid types for their data.
+\newline
+
+\begin{table}[h!]
+    \centering
+    \caption{Structure of TLV data structures}
+    \label{tab:TLVDef}
+    \begin{tabular}{|p{1cm}|p{0.04cm}|p{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+        2 & \multicolumn{8}{c|}{Value Type} & \multicolumn{24}{c|}{Value Length}\\
+        \hline
+        ... & \multicolumn{32}{c|}{Arbitrary Data}\\
+        \hline
+        n & \multicolumn{16}{c|}{Arbitrary Data (Cont)} & \multicolumn{16}{c|}{\cellcolor[gray]{.6}...}\\
+        \hline
+    \end{tabular}
+\end{table}
+
+
+Value Type: Type of the data in this structure.  Defined on a per-application basis.\\
+Value Length: The length of the entire structure in bytes.  Stored in an unsigned integer.\\
+Arbitrary Data: The value stored in this TLV. TLVs need not be aligned to a 32-bit word, but should be aligned to the byte.
+
 \clearpage
 
 \section{Failure Modes}
@@ -895,7 +982,6 @@ If the field was stopped, each robot should also be rebooted and the field shoul
 
 \clearpage
 
-\printglossary
 \printglossary[type=\acronymtype]
 % If you need a bibliography for your document, add it here
 %\begin{thebibliography}{9}
