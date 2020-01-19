@@ -713,7 +713,8 @@ Controller UID: A universally unique ID for this controller.
 
 \subsection {UPDATE\_STATUS Packets}
 \paragraph{}
-USER\_DATA Packets contain data from the human controller.
+UPDATE\_STATUS packets are sent in response to a CONFIG\_UPDATE or STATE\_UPDATE packet, 
+and contain whether or not the update command was successful.
 \begin{table}[h!]
     \centering
     \label{tab:updateStatusDef}
@@ -758,7 +759,7 @@ USER\_DATA Packets contain data from the human controller.
         \hline
         [0,1] & \multicolumn{32}{c|}{Header}\\
         \hline
-        2 & \multicolumn{32}{c|}{Status Code}\\
+        2 & \multicolumn{8}{c|}{Status Code} & \multicolumn{24}{c|}{\cellcolor[gray]{.6} Reserved} \\
         \hline
     \end{tabular}
 \end{table}
@@ -829,7 +830,7 @@ Table \ref{tab:updateStatusCodes} summarizes valid codes.
         \hline
         [0,1] & \multicolumn{32}{c|}{Header}\\
         \hline
-        2 & \multicolumn{32}{c|}{Git Commit Hash}\\
+        2 & \multicolumn{4}{c|}{Code Status} & \multicolumn{28}{c|}{Git Commit Hash}\\
         \hline
         3 & \multicolumn{32}{c|}{Robot UUID}\\
         \hline
@@ -842,6 +843,8 @@ Table \ref{tab:updateStatusCodes} summarizes valid codes.
         \hline
     \end{tabular}
 \end{table}
+Code Status: 4-bit value denoting the state of the code relative to the current git commit.
+See Table \ref{tab:CodeStatus} for a list of valid values.  This should be inserted into the code as a constant at compile time.\\
 Git Commit Hash: The hash of the current git commit of the FMS or Robot code (not core code) running on the sender.
 The hash should be inserted into the code at compile time (i.e. using a makefile)\\
 Robot UUID: A unique identifier for the robot which MAY NOT conflict with any other robots on the field.\\
@@ -849,6 +852,21 @@ Robot State: The current state of the robot (see the *\_STATE message definition
 Number of Config Entries: The current number of configuration entries the robot has\\
 Arbitrary Data: Whatever data the programmer sees fit to send in a debug message to the reciever.\\
 Unused:  Unused padding bits to align the message to a 32 bit word.\\
+
+\begin{table}[h!]
+    \centering
+    \caption{Valid values of the Code Status field in DEBUG Packets}.
+    \label{tab:CodeStatus}
+    \begin{tabular}{|p{2in}|p{.8in}|p{3.25in}|}
+        \hline
+        Name & Value & Description \\
+        \hline
+        Up to date & 0x0 & The code running on the robot is the same as the commit with the provided hash \\
+        \hline
+        Ahead & 0x1 & There are changes in the running code that are not in the git commit\\
+        \hline
+    \end{tabular}
+\end{table}
 
 \clearpage
 
