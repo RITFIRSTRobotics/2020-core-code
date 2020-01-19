@@ -1,0 +1,989 @@
+% Document settings
+\documentclass[11pt]{article}
+\usepackage{fancyhdr}
+\usepackage[margin=1in]{geometry}
+\usepackage[pdftex]{graphicx}
+\usepackage{multirow}
+\usepackage{setspace}
+\pagestyle{plain}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{epstopdf}
+%\usepackage{MnSymbol,wasysym}
+\usepackage{amsmath}
+%\usepackage{mathtools}
+\usepackage{amssymb}
+\usepackage{lipsum}
+\usepackage{sympytex}
+\usepackage{siunitx}
+\setlength\parindent{0pt}
+\graphicspath{{images/}{drawings/}}
+\usepackage[acronym]{glossaries}
+
+\usepackage{rotating}
+\usepackage{array}
+\usepackage[table]{xcolor}
+
+% % % % % % % % % % % Header footer
+% % % % % % % % % % %EDIT THIS % % % % % % % % % % % % % % % % % % % %
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{ImagineBots Control Protocol}
+\rhead{Alex Kneipp}
+\lfoot{RIT FIRST Alumni Association}
+\cfoot{2020-01-18}
+\rfoot{Page \thepage}
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% % % % % % % % % % % %Glossary Setup % %% % % % %
+\makeglossaries
+
+\newacronym{tcp}{TCP}{Transmission Control Protocol}
+\newacronym{udp}{UDP}{User Datagram Protocol}
+\newacronym{uuid}{UUID}{Unique Universal ID}
+\newacronym{fms}{FMS}{Field Management System}
+\newacronym{asc}{ASC}{Arduino Scoring and Control}
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+
+\begin{document}
+
+%Setup the numbering scheme for equations and figures
+\numberwithin{equation}{subsection}
+\numberwithin{figure}{subsection}
+
+\title{ImagineBots Control Protocol}
+\author{Alex Kneipp}
+\date{2020-01-18}
+\maketitle
+
+\hspace{1in}
+%TODO Include an RIT FIRST logo
+%\includegraphics[scale=0.9,trim=0cm 0in 0in 0.0in,clip]{RIT_KGCOE1}
+
+\tableofcontents
+
+
+\newpage
+\section {Packet Types}
+\paragraph{}
+This standard defines several different packet types to better fit the packet structure to the type of data being sent.
+Each packet type has a numerical value which is included in the packet header to encode the type.
+The valid packet types, their encoded values, their intended purpose, 
+and the network protocol which should be used to send them is shown in Table \ref{tab:pktTypes}.
+
+\begin{table}[h!]
+    \centering
+    \caption{Packet categories and their purpose}
+    \label{tab:pktTypes}
+    \begin{tabular}{|c|c|p{3in}|c|}
+        \hline
+        PacketType & Value & Purpose & Protocol \\ 
+        \hline
+        INIT & 0x00 & Robot Initialization & \acrshort{tcp} \\ 
+        \hline
+        STATE\_REQUEST & 0x10 & A request for the recipient to respond with their current state. & \acrshort{tcp} \\
+        \hline
+        STATE\_RESPONSE & 0x11 & The current state of the sender. Sent periodically or in response to a STATE\_REQUEST message. & \acrshort{tcp} \\
+        \hline
+        STATE\_UPDATE & 0x12 & A request for the recipient to update their state according to the data contained in the message. & \acrshort{tcp} \\
+        \hline
+        CONFIG\_REQUEST & 0x20 & A request for the recipient responds with their current configuration. & \acrshort{tcp} \\
+        \hline
+        CONFIG\_RESPONSE & 0x21 & Sent in response to a CONFIG\_REQUEST message; 
+            includes data about the senders configuration. & \acrshort{tcp} \\
+        \hline
+        CONFIG\_UPDATE & 0x22 & A request for the recipient to update their configuration according to the data contained 
+            in the message. & \acrshort{tcp} \\
+        \hline
+        USER\_DATA & 0x30 & Data from the robot controllers & \acrshort{udp} \\
+        \hline
+        UPDATE\_STATUS & 0x40 & Optionally sent in response to CONFIG\_UPDATE or STATE\_UPDATE requests.
+        Contains the result of the update.  If the update failed, the message should contain a reason for the failure.
+        If this message is not received in response to a *\_UPDATE message, the update should be assumed to be a success.
+        & \acrshort{udp} \\
+        \hline
+        DEBUG & 0xFF & Debug data to be reported to a developer. & \acrshort{tcp}/\acrshort{udp} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\section {Protocol Sequence}
+\subsection{Initialization}
+\paragraph{}
+Upon boot up, a robot connects to the robot network and makes an INIT request containing its \acrfull{uuid} to the \acrfull{fms} 
+(The \acrshort{fms} network address must be configured in the robot configuration before startup.) 
+The \acrshort{fms} then responds to the robot with an INIT message with a \acrshort{uuid} of all zeros. 
+The robot should synchronize it's program time to the timestamp in the INIT message from the \acrshort{fms}.
+The \acrshort{fms} then sends a CONFIG\_UDPATE message to the robot which configures it for a controller connected 
+to the \acrshort{fms} and the alliance color corresponding to the controller it received. 
+\paragraph{}
+The CONFIG\_UPDATE message is not required to be sent immediately following the INIT response, 
+in order to allow a human field manager to assign a controller and team to a robot which has just been added to the field.
+An Initialization procedure may happen at any time, including during the match,
+and the \acrshort{fms} should respond whenever it receives an INIT request.
+
+\subsection{Match Start}
+\paragraph{}
+Before a robot may join a match, it must have successfully completed the entirety of the Initialization procedure 
+(including the configuration).  
+To start the match, the \acrshort{fms} sends a STATE\_UPDATE message to all of the robots it has successfully initialized 
+which sets them to the ENABLED state.
+
+\subsection {The Match}
+\paragraph{}
+During a match, the \acrshort{fms} should poll the connected \acrfull{asc} for controller data, 
+and then forward that data to the robots which it has fully initialized via USER\_DATA messages.
+Each USER\_DATA message should be sent only to the robot for which the controller data is intended,
+and it should only contain the data intended for that robot.
+The \acrshort{fms} may optionally periodically send STATE\_REQUEST messages to each of the robots participating in a match,
+and may act according to the response or lack thereof.
+
+\subsection {Match End}
+\paragraph{}
+To stop a match regularly, the \acrshort{fms} sends a STATE\_UPDATE message to 
+all of the robots it has successfully initialized to DISABLED.
+
+\subsection{Emergency Stop}
+\paragraph{}
+To emergency stop (e-stop) a robot, the \acrshort{fms} sends a STATE\_UPDATE message to the target robot, which updates its state to E-STOPPED.
+This packet can be sent at any time after a robot is initialized. An E-STOPPED robot should turn off all of its motors 
+and ignore or respond with failure to all further messages until re-initialized.
+
+\section {Packet Structures}
+\paragraph{}
+The robot control packets generally follow a Type-Length-Value (TLV) structure. Packets may be sent via either UDP or TCP (depending on the type of the packet), and robots should implement listeners for both protocols.
+
+\subsection {Packet Header}
+\paragraph{}
+Each packet contains a header with the message type (which determines how the robot should unpack the data in the packet),
+and message length, and a timestamp.
+\newline
+\begin{table}[h!]
+    \centering
+    \caption{Structure of the header of all packets}
+    \label{tab:headerDef}
+    \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        0 & \multicolumn{8}{c|}{Message Type} & \multicolumn{24}{c|}{Message Length} \\
+        \hline
+        1 & \multicolumn{32}{c|}{Timestamp} \\
+        \hline
+        2..n & \multicolumn{32}{c|}{Data} \\
+        \hline
+    \end{tabular}
+\end{table}
+Message Type: Denotes the type of message contained in this packet, see Table 1 for more information.\\
+Message Length: The length of the message, including the header, in bytes.
+Timestamp: The time, in milliseconds, since the \acrshort{fms} has started, stored as a 32 bit unsigned integer.
+Robots should update their timestamp to match that of the \acrshort{fms} when they recieve their initialization packet.\\
+Data: The data which this packet carries, which must be $Message Length - 8$ bytes long.\\
+
+\subsection {INIT Packets}
+\paragraph{}
+Initialization packets are sent as part of the initialization handshake between a starting up robot and the FMS.  
+As such it contains information necessary to uniquely identify a robot.  
+\newline
+\begin{table}[h!]
+    \centering
+    \caption{Structure of INIT packets}
+    \label{tab:InitDef}
+    \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+        2 & \multicolumn{32}{c|}{Robot UUID} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Robot UUID: A unique identifier for the robot which MAY NOT conflict with any other robots on the field.
+
+\subsection {STATE\_REQUEST Packets}
+\paragraph{}
+State request packets are empty except for the standard header with the appropriate information.
+\newline
+\begin{table}[h!]
+    \centering
+    \caption{Structure of STATE\_REQUEST packets}
+    \label{tab:stateReqestDef}
+    \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection {STATE\_RESPONSE Packets}
+\paragraph{}
+These packets contatin arbitrary data about the state of the message sender.
+\newline
+\begin{table}[h!]
+    \centering
+    \caption{Structure of STATE\_RESPONSE packets}
+    \label{tab:stateResponseDef}
+    \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+        2 & \multicolumn{8}{c|}{State Code} & \multicolumn{24}{c|}{\cellcolor[gray]{.6}Reserved} \\
+        \hline
+        3..n & \multicolumn{32}{c|}{Arbitrary Data} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+State Code: An integer value signifying the state of the sender.  Valid codes are shown in Table \ref{tab:StateCodes}.
+
+%TODO a lot of these don't describe how the \acrshort{fms} handles states this table says it's allowed to be in.
+%That should be fixed
+\begin{table}[h!]
+    \centering
+    \caption{Robot and \acrshort{fms} States and Codes}
+    \label{tab:StateCodes}
+    \begin{tabular}{|c|p{1cm}|p{3in}|c|}
+        \hline
+        State Name & Code & Meaning & \acrshort{fms} or Robot? \\
+        \hline
+        INITIALIZED & 0x00 & The robot has been initialized but not configured (See the Initialization sequence) & Robot \\
+        \hline
+        DISABLED & 0x01 & The robot is disabled and should not take action based on or be sent any USER\_DATA packets. & Robot/FMS\\
+        \hline
+        ENABLED & 0x02 & The robot is enabled and should react to USER\_DATA packets. & Robot/\acrshort{fms} \\
+        \hline
+        E-STOPPED & 0xFF & The robot has been E-STOPPED and should not respond to any further packets except with error messages. & Robot/\acrshort{fms} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Arbitrary Data: User-defined data which may be used or ignored by either the robot or FMS.
+
+\subsection {STATE\_UPDATE Packets}
+\paragraph{}
+These packets are sent when the \acrshort{fms} wishes to update the state of a robot.
+\newline
+\begin{table}[h!]
+    \centering
+    \caption{Structure of STATE\_UPDATE packets}
+    \label{tab:stateUpdateDef}
+    \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+        2 & \multicolumn{8}{c|}{New State Code} & \multicolumn{24}{c|}{\cellcolor[gray]{.6}Reserved} \\
+        \hline
+        3..n & \multicolumn{32}{c|}{Arbitrary Data} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+New State Code: An integer value signifying the state the robot or FMS should change to.
+Valid codes are shown in Table \ref{tab:StateCodes}\\
+Arbitrary Data: User-defined data which may be used or ignored by either the robot or FMS.
+
+\subsection {CONFIG\_REQUEST Packets}
+\paragraph{}
+These packets are sent by any agent to request a config value or values of another.
+\newline
+\begin{table}[h!]
+    \centering
+    \caption{Structure of CONFIG\_REQUEST packets}
+    \label{tab:configRequestDef}
+    \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+        2 & \multicolumn{32}{c|}{\multirow{2}{*}{Keys List}} \\
+        \cline{1-1}
+        ... & \multicolumn{32}{c|}{}\\
+        \hline
+        n & \multicolumn{16}{c|}{Keys List (cont)} & \multicolumn{16}{c|}{\cellcolor[gray]{.6}Unused} \\
+        \hline
+    \end{tabular}
+\end{table}
+\newline
+Keys List:  A sequence of nul-terminated strings which represent the configuration keys of the receiving agent.
+It may be the special keyword “ALL”, which tells the receiving agent to respond with their entire configuration.\\
+Unused: Padding bytes to make the packet aligned to a 32-bit boundary
+
+\subsection {CONFIG\_RESPONSE Packets}
+\paragraph{}
+These packets are sent in response to a CONFIG\_REQUEST packet and contains the reqeusted configuration keys.
+\newline
+\begin{table}[h!]
+    \centering
+    \caption{Structure of CONFIG\_RESPONSE packets}
+    \label{tab:configResponseDef}
+    \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+        2 & \multicolumn{32}{c|}{\multirow{2}{*}{Key-value List}} \\
+        \cline{1-1}
+        ... & \multicolumn{32}{c|}{}\\
+        \hline
+        n & \multicolumn{16}{c|}{Key-value List (cont)} & \multicolumn{16}{c|}{\cellcolor[gray]{.6}Unused} \\
+        \hline
+    \end{tabular}
+\end{table}
+\newline
+Key-value list: A semi-colon (;) separated list of key-value pairs representing the configuration values to 
+update or create on the reciever.
+Each key is a nul-terminated string immediately followed by a TLV structure (defined in Table \ref{tab:TLVDef}) signifying the value of the configuration value.
+Valid TLV types are defined in Table \ref{tab:configTypes}.
+Unused: Padding bytes to force packet alignment to a 32-bit word.
+
+\begin{table}[h!]
+    \centering
+    \caption{Valid Configuration value types}
+    \label{tab:configTypes}
+    \begin{tabular}{|p{3in}|p{.5in}|}
+        \hline
+        Type & Type Code\\
+        \hline
+        Integer & 0x00\\
+        \hline
+        Float & 0x01\\
+        \hline
+        Double Precision Floating Point & 0x02\\
+        \hline
+        C-String & 0x03\\
+        \hline
+        Boolean & 0x04 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection {CONFIG\_UPDATE Packets}
+\paragraph{}
+An agent sends this packet to attempt to change the configuration of another agent.
+\newline
+\begin{table}[h!]
+    \centering
+    \caption{Structure of CONFIG\_UPDATE packets}
+    \label{tab:configUpdateDef}
+    \begin{tabular}{|p{1cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+        2 & \multicolumn{32}{c|}{\multirow{2}{*}{Key-value List}} \\
+        \cline{1-1}
+        ... & \multicolumn{32}{c|}{}\\
+        \hline
+        n & \multicolumn{16}{c|}{Keys-value List (cont)} & \multicolumn{16}{c|}{\cellcolor[gray]{.6}Unused} \\
+        \hline
+    \end{tabular}
+\end{table}
+\newline
+Key-value list: A semi-colon (;) separated list of key-value pairs representing the configuration values to 
+update or create on the reciever.
+Each key is a nul-terminated string immediately followed by a TLV structure signifying the value of the configuration value.
+Valid types for the TLV structure are defined in table \ref{tab:configTypes}.
+Unused:  Padding bytes to force packet alignment to a 32-bit word.
+
+\subsection {USER\_DATA Packets}
+\paragraph{}
+USER\_DATA Packets contain data from the human controller.
+\begin{table}[h!]
+    \centering
+    \caption{Structure of USER\_DATA packets}
+    \label{tab:userDataDef}
+    \begin{tabular}{|p{1cm}|p{0.04cm}|p{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+        2 & \multicolumn{8}{c|}{Left Joystick X} & \multicolumn{8}{c|}{Left Joystick Y} & 
+            \multicolumn{8}{c|}{Right Joystick X} & \multicolumn{8}{c|}{Right Joystick Y} \\
+        \hline
+        3 &A&B& \multicolumn{14}{c|}{\cellcolor[gray]{.6} Reserved} & \multicolumn{16}{c|}{Controller UUID} \\
+        \hline
+    \end{tabular}
+\end{table}
+\newline
+Left Joystick X: The X axis of the left joystick on the controller.  An unsigned integer value from 0 to 255.\\
+Left Joystick Y: The Y axis of the left joystick on the controller.  An unsigned integer value from 0 to 255.\\
+Right Joystick X: The X axis of the right joystick on the controller.  An unsigned integer value from 0 to 255.\\
+Right Joystick Y: The Y axis of the right joystick on the controller.  An unsigned integer value from 0 to 255.\\
+A: The current state of button “A” (which button?).  0 is unpressed, 1 is pressed.\\
+B: The current state of button “B” (which button?).  0 is unpressed, 1 is pressed.\\
+Controller UID: A universally unique ID for this controller.
+
+\subsection {UPDATE\_STATUS Packets}
+\paragraph{}
+UPDATE\_STATUS packets are sent in response to a CONFIG\_UPDATE or STATE\_UPDATE packet, 
+and contain whether or not the update command was successful.
+\begin{table}[h!]
+    \centering
+    \caption{Structure of UPDATE\_STATUS packets}
+    \label{tab:updateStatusDef}
+    \begin{tabular}{|p{1cm}|p{0.04cm}|p{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+        2 & \multicolumn{8}{c|}{Status Code} & \multicolumn{24}{c|}{\cellcolor[gray]{.6} Reserved} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Status Code: The result of the last received UPDATE\_* type packet.
+Table \ref{tab:updateStatusCodes} summarizes valid codes.
+
+\begin{table}[h!]
+    \centering
+    \caption{Update status codes and descriptions}
+    \label{tab:updateStatusCodes}
+    \begin{tabular}{|p{2in}|p{.8in}|p{3.25in}|}
+        \hline
+        Status Name & Status Code & Status Description \\
+        \hline
+        SUCCESS & 0x00 & The update was accepted and implemented in the receiving entity. \\
+        \hline
+        INVALID\_STATE & 0x01 & The requested state change was for an unknown state \\
+        \hline
+        PERMISSION\_DENIED & 0x02 & The sending entity does not have permission to update 
+        the state or configuration of the receiving entity. \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{DEBUG Packets}
+\begin{table}[h!]
+    \centering
+    \caption{Structure of DEBUG packets}
+    \label{tab:debugDef}
+    \begin{tabular}{|p{1cm}|p{0.04cm}|p{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+        2 & \multicolumn{4}{c|}{Code Status} & \multicolumn{28}{c|}{Git Commit Hash}\\
+        \hline
+        3 & \multicolumn{32}{c|}{Robot UUID}\\
+        \hline
+        4 & \multicolumn{8}{c|}{Robot State} & \multicolumn{8}{c|}{\cellcolor[gray]{.6}Reserved}&
+            \multicolumn{16}{c|}{Number of Config Entries}\\
+        \hline
+        ... & \multicolumn{32}{c|}{Arbitrary Data}\\
+        \hline
+        n & \multicolumn{16}{c|}{Arbitrary Data (Cont)} & \multicolumn{16}{c|}{\cellcolor[gray]{.6}Unused}\\
+        \hline
+    \end{tabular}
+\end{table}
+Code Status: 4-bit value denoting the state of the code relative to the current git commit.
+See Table \ref{tab:CodeStatus} for a list of valid values.  This should be inserted into the code as a constant at compile time.\\
+Git Commit Hash: The hash of the current git commit of the FMS or Robot code (not core code) running on the sender.
+The hash should be inserted into the code at compile time (i.e. using a makefile)\\
+Robot UUID: A unique identifier for the robot which MAY NOT conflict with any other robots on the field.\\
+Robot State: The current state of the robot (see the *\_STATE message definitions for a more complete description)\\
+Number of Config Entries: The current number of configuration entries the robot has\\
+Arbitrary Data: Whatever data the programmer sees fit to send in a debug message to the reciever.\\
+Unused:  Unused padding bits to align the message to a 32 bit word.\\
+
+\begin{table}[h!]
+    \centering
+    \caption{Valid values of the Code Status field in DEBUG Packets}.
+    \label{tab:CodeStatus}
+    \begin{tabular}{|p{2in}|p{.8in}|p{3.25in}|}
+        \hline
+        Name & Value & Description \\
+        \hline
+        Up to date & 0x0 & The code running on the robot is the same as the commit with the provided hash \\
+        \hline
+        Ahead & 0x1 & There are changes in the running code that are not in the git commit\\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection {TLV Structure}
+\paragraph{}
+Several packets contain general purpose TLV (Type, Length, Value) structures.
+The general structure of them is defined in Table \ref{tab:TLVDef};
+each of the packets individually define the valid types for their data.
+\newline
+
+\begin{table}[h!]
+    \centering
+    \caption{Structure of TLV data structures}
+    \label{tab:TLVDef}
+    \begin{tabular}{|p{1cm}|p{0.04cm}|p{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|
+        m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|m{0.04cm}|}
+        \hline
+        Word & 
+        \begin{sideways}31\end{sideways} &
+        \begin{sideways}30\end{sideways} & 
+        \begin{sideways}29\end{sideways} &
+        \begin{sideways}28\end{sideways} &
+        \begin{sideways}27\end{sideways} &
+        \begin{sideways}26\end{sideways} &
+        \begin{sideways}25\end{sideways} &
+        \begin{sideways}24\end{sideways} &
+        \begin{sideways}23\end{sideways} &
+        \begin{sideways}22\end{sideways} &
+        \begin{sideways}21\end{sideways} &
+        \begin{sideways}20\end{sideways} &
+        \begin{sideways}19\end{sideways} &
+        \begin{sideways}18\end{sideways} &
+        \begin{sideways}17\end{sideways} &
+        \begin{sideways}16\end{sideways} &
+        \begin{sideways}15\end{sideways} &
+        \begin{sideways}14\end{sideways} &
+        \begin{sideways}13\end{sideways} &
+        \begin{sideways}12\end{sideways} &
+        \begin{sideways}11\end{sideways} &
+        \begin{sideways}10\end{sideways} &
+        \begin{sideways}9\end{sideways} &
+        \begin{sideways}8\end{sideways} &
+        \begin{sideways}7\end{sideways} &
+        \begin{sideways}6\end{sideways} &
+        \begin{sideways}5\end{sideways} &
+        \begin{sideways}4\end{sideways} &
+        \begin{sideways}3\end{sideways} &
+        \begin{sideways}2\end{sideways} &
+        \begin{sideways}1\end{sideways} &
+        \begin{sideways}0\end{sideways} \\
+        \hline
+        [0,1] & \multicolumn{32}{c|}{Header}\\
+        \hline
+        ... & \multicolumn{32}{c|}{\cellcolor[gray]{.6}Miscellaneous Data}\\
+        \hline
+        n & \multicolumn{8}{c|}{Value Type} & \multicolumn{24}{c|}{Value Length}\\
+        \hline
+        n+1 & \multicolumn{32}{c|}{Value Data}\\
+        \hline
+        n+m & \multicolumn{16}{c|}{Value Data (Cont.)} & \multicolumn{16}{c|}{\cellcolor[gray]{.6}Misc. Data}\\
+        \hline
+    \end{tabular}
+\end{table}
+
+
+Value Type: Type of the data in this structure, defined on a per-application basis. \\
+Value Length: The length of the entire structure in bytes.  Stored in an unsigned integer. \\
+Value Data: The value stored in this TLV. TLVs need not be aligned to a 32-bit word, but should be aligned to the byte. \\
+
+\clearpage
+
+\section{Failure Modes}
+\subsection{Robot Disconnection}
+\paragraph{}
+The \acrshort{fms} should regularly (about every 5s) send STATE\_REQUEST packets to each robot it has Initialized 
+in order to detect if the robot has been disconnected.  If a robot has been disconnected, 
+it must be reinitialized by the \acrshort{fms}.
+As such, robots should respond to a STATE\_REQUEST packet as soon as possible, and should monitor incoming STATE\_UPDATE packets
+so they can also tell if they have been disconnected.  This functionality may be disabled by a value in the \acrshort{fms}
+configuration, which must be sent over in the CONFIG\_UPDATE packet as part of the initialization sequence.
+
+\paragraph{}
+If disconnect detection is disabled and a robot is rebooted, it will send an INIT packet to the \acrshort{fms}.
+In order to correctly handle this situation, the \acrshort{fms} must keep the \acrshort{uuid} of all robots, 
+and if it sees an INIT packet from a robot it has already initialized, 
+it should re-initialize the robot with the same paramaters the robot already had, rather
+than generating a new set of paramaters.
+
+\subsection{Emergency Stop}
+\paragraph{}
+If the robot or entire field has been emergency stopped by a user, the e-stopped component must be fully rebooted.
+After rebooting, the Robot Disconnection failure mode should be followed if the component was a robot.  
+If the field was stopped, each robot should also be rebooted and the field should be started as usual.
+
+\clearpage
+
+\printglossary[type=\acronymtype]
+% If you need a bibliography for your document, add it here
+%\begin{thebibliography}{9}
+%\end{thebibliography}
+
+\end{document}

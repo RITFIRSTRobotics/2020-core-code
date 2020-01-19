@@ -5,10 +5,33 @@
 #
 # @author Connor Henley, @thatging3rkid 
 
-# install dependencies
+# run an apt-get update if this is automated
+if test -e "config.onpush" || test -e "config.full"; then
+    sudo apt-get update -qq
+fi
+
+# install valgrind
 if ! [ -x "$(command -v valgrind)" ]; then
-    sudo add-apt-repository -y ppa:snaipewastaken/ppa
-    sudo apt-get update -qq && sudo apt-get install -y valgrind criterion-dev
+    sudo apt-get install -y valgrind
+fi
+
+# install pdflatex (only for full builds)
+if ! [ -x "$(command -v pdflatex)" ] && test -e "config.full"; then
+    # Install MiKTeX
+    sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 \
+        --recv-keys D6BC243565B2087BC3F897C9277A7293F59E4889 > /dev/null
+    echo "deb https://mirrors.rit.edu/CTAN/systems/win32/miktex/setup/deb `lsb_release -c -s` universe" | \
+        sudo tee /etc/apt/sources.list.d/miktex.list > /dev/null
+    sudo apt-get update -qq && sudo apt-get install -y miktex
+
+    # check for error
+    if ! [ $? == 0 ]; then
+        exit 1;
+    fi
+
+    # Setup MiKTeX and enable auto-package installation
+    sudo miktexsetup --shared=yes finish && sudo initexmf --admin --set-config-value [MPM]AutoInstall=1
+    sudo mpm --admin --update-db # update database, should fix auto-package installation
 fi
 
 # make sure lib directory exists
@@ -16,14 +39,30 @@ if ! test -d "lib"; then
     mkdir lib
 fi
 
-# start the makefile, put the header down
+# Start the makefile, put the header down
 printf "" >Makefile
 printf '# %s makefile\n' "${PWD##*/}" >>Makefile
+
+# Print the configuration file status
+if test -e "config.onpush"; then
+    printf '# configuration: on-push\n' >>Makefile
+elif test -e "config.full"; then
+    printf '# configuration: full\n' >>Makefile
+else
+    printf '# configuration: dev\n' >>Makefile
+fi
+
+# finish debugging info
 printf '# Generated on: %s at %s\n' "$HOSTNAME" "`date`" >>Makefile
 
-# Search for Makefiles
-dirs=()
+# Mark directories to ignore
 skips=("./.git/" "./.github/" "./obj/" "./tmp/")
+if ! test -e "config.full"; then
+    skips+=("./doc/")
+fi
+
+# Searh for Makefiles
+dirs=()
 for dir in ./*/
 do
     # check if this should be skipped
@@ -33,25 +72,41 @@ do
 
     # if there's a makefile, save it
     if test -f "${dir}/Makefile"; then
-        dirs+=${dir}
+		dirs+=(${dir})
     fi
 done
+
+# Define the make mode
+if test -e "config.onpush"; then
+    make_mode="MAKE_CONFIG=ONPUSH"
+elif test -e "config.full"; then
+    make_mode="MAKE_CONFIG=FULL"
+else
+    make_mode="MAKE_CONFIG=DEV"
+fi
+
+# Define the git hash
+git_hash=`git describe --always`
+if ! [[ $git_hash =~ [0-9a-f]{7} ]]; then
+    git_hash="fffffff"
+fi
+git_hash="GIT_HASH="${git_hash}
 
 # Add the build-all instruction
 printf '\nall:\n' >>Makefile
 for s in "${dirs[@]}"
 do
-    printf '\tmake -C %s clean && make -C %s ci-all\n' ${s} ${s} >>Makefile
+    printf '\t-make %s %s -C %s clean\n' ${make_mode} ${git_hash} ${s} >>Makefile
+    printf '\tmake %s %s -k -C %s ci-build\n' ${make_mode} ${git_hash} ${s} >>Makefile
 done
-printf '\t@echo "done"\n' >>Makefile
-printf '\n' >>Makefile
+printf '\t@echo "Finished running all ci-build"\n' >>Makefile
 
 # Add the test instruction
 printf '\ncheck:\n' >>Makefile
 for s in "${dirs[@]}"
 do
-     printf '\tmake -C %s ci-test\n' ${s} >>Makefile
+     printf '\tmake %s %s -k -C %s ci-test\n' ${make_mode} ${git_hash} ${s} >>Makefile
 done
-printf '\t@echo "done"\n' >>Makefile
+printf '\t@echo "Finished running all ci-test"\n\n' >>Makefile
 
 echo "Complete!"
