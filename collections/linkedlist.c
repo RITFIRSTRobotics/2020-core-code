@@ -12,14 +12,8 @@
 #include <pthread.h>
 #include <stdbool.h>
 
-// do some preprocessor voodoo
-#ifdef _LOCAL_HEADER
-    #include "list.h"
-    #include "linkedlist.h"
-#else
-    #include "core/collections/list.h"
-    #include "core/collections/linkedlist.h"
-#endif
+#include "list.h"
+#include "linkedlist.h"
 
 /**
  * Create a linked list node

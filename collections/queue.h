@@ -15,12 +15,7 @@ extern "C" {
 #include <stdint.h>
 #include <pthread.h>
 
-// do some preprocessor voodoo
-#ifdef _LOCAL_HEADER
-    #include "linkedlist.h"
-#else
-    #include "core/collections/linkedlist.h"
-#endif
+#include "linkedlist.h"
 
 // Use a linked list as the backend for the queue
 typedef struct LinkedList Queue_t;

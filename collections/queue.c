@@ -7,14 +7,8 @@
  */
 #include <stdint.h>
 
-// do some preprocessor voodoo
-#ifdef _LOCAL_HEADER
-    #include "queue.h"
-    #include "linkedlist.h"
-#else
-    #include "core/collections/queue.h"
-    #include "core/collections/linkedlist.h"
-#endif
+#include "queue.h"
+#include "linkedlist.h"
 
 /**
  * @inherit

@@ -21,7 +21,7 @@ $(OBJ_DIR)/net_lowlevel.o: lowlevel.c constants.h lowlevel.h
 
 ### CI testing recipes
 
-ci-build: ; # empty
+ci-build: all
 ci-test:  ; # empty
 
 ### Maintnence recipes

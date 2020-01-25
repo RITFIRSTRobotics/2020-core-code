@@ -15,12 +15,7 @@ extern "C" {
 #include <stdint.h>
 #include <pthread.h>
 
-// do some preprocessor voodoo
-#ifdef _LOCAL_HEADER
-    #include "list.h"
-#else
-    #include "core/collections/list.h"
-#endif
+#include "list.h"
 
 // Linked list node structure (double link)
 typedef struct LinkedListNode {
