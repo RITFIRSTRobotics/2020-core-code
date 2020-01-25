@@ -5,6 +5,7 @@
 #     - run all test cases
 # Notably, documentation does not get built.
 #
+# @version v1.0
 # @author Connor Henley, @thatging3rkid
 name: On-Push Integration Testing
 
