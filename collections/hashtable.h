@@ -1,0 +1,8 @@
+//
+// Created by Alex Kneipp on 1/25/20.
+//
+
+#ifndef INC_2020_CORE_CODE_HASHTABLE_H
+#define INC_2020_CORE_CODE_HASHTABLE_H
+
+#endif //INC_2020_CORE_CODE_HASHTABLE_H
