@@ -27,6 +27,14 @@ typedef enum NetworkProtocol {
     np_UDP
 } NetworkProtocol_t;
 
+// Defines a structure to store a minimally decoded packet
+typedef struct IntermediateTLV {
+    uint32_t type:8;
+    uint32_t length:24;
+    uint8_t* data;
+} IntermediateTLV_t;
+
+// Defines a structure to store connection information
 typedef struct NetworkConnection {
     // Shared connection data
     void (*handler)(IntermediateTLV_t*);
@@ -42,13 +50,6 @@ typedef struct NetworkConnection {
     ListenerStatus_t* udp_status;
 
 } NetworkConnection_t;
-
-// Defines a structure to store a minimally decoded packet
-typedef struct IntermediateTLV {
-    uint32_t type:8;
-    uint32_t length:24;
-    uint8_t* data;
-} IntermediateTLV_t
 
 /**
  * Sets up a listener to listen to TCP packets
@@ -79,7 +80,7 @@ void llnet_listener_udp_start(NetworkConnection_t* connection);
  * @param new_thread if true, this send will be done in a new thread
  */
 void llnet_sender_send(NetworkConnection_t* connection, NetworkProtocol_t proto,
-    IntermediateTLV packet, bool new_thread);
+    IntermediateTLV_t packet, bool new_thread);
 
 #ifdef __cplusplus
 }

@@ -17,13 +17,6 @@
 #include <netinet/ip.h>
 
 // local things
-#if _LOCAL_HEADER
-    #include "lowlevel.h"
-    #include "constants.h"
-#else
-    #include "core/network/lowlevel.h"
-    #include "core/network/constants.h"
-#endif
-
-
+#include "lowlevel.h"
+#include "constants.h"
 
