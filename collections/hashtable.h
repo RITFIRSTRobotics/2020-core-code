@@ -5,7 +5,12 @@
 #ifndef INC_2020_CORE_CODE_HASHTABLE_H
 #define INC_2020_CORE_CODE_HASHTABLE_H
 
+// do some preprocessor voodoo
+#ifdef _LOCAL_HEADER
 #include "list.h"
+#else
+#include "core/collections/list.h"
+#endif
 
 typedef struct HashTable * HashTable_t;
 
@@ -49,18 +54,6 @@ HashTable_t hashtable_initSize(uint32_t (*hash)(void*), int (*key_equals)(void*,
  *  Non-zero if the key was successfully inserted.
  */
 int hashtable_put(HashTable_t ht, void* key, void* value);
-/**
- * Put a new key-value pair in the hashtable iff the key is not already mapped to another value.
- * @param ht
- *  The hashtable object to insert into.
- * @param key
- *  The key for this object.  Keys may not be null.
- * @param value
- *  The value to insert into the hash table under \p key
- * @return
- *  Non-zero if the key was successfully inserted, zero if the key was already mapped in the table.
- */
-int hashtable_putIfAbsent(HashTable_t ht, void* key, void* value);
 
 /**
  * @param ht
@@ -90,7 +83,7 @@ void* hashtable_getWithDefault(HashTable_t ht, void* key, void* defaultValue);
  * @param key
  *  The key of the k-v pair to remove
  * @return
- *  The removed value if the key was found and removed, 0 otherwise.
+ *  The removed value if the key was found and removed, NULL otherwise.
  */
 void* hashtable_remove(HashTable_t ht, void* key);
 /**
@@ -103,7 +96,7 @@ void* hashtable_remove(HashTable_t ht, void* key);
  * @param value
  *  The value to check.
  * @return
- *  The removed value if the key-value pair was found and removed, 0 otherwise.
+ *  The removed value if the key-value pair was found and removed, NULL otherwise.
  */
 void* hashtable_removeIfValue(HashTable_t ht, void* key, void* value);
 
