@@ -10,7 +10,7 @@ CFLAGS=-Wall -Wextra -std=c11 -pthread -lm
 TESTFLAGS=-g $(CFLAGS) -D_LOCAL_HEADER
 CC=gcc
 
-all: $(OBJ_DIR)/arraylist.o $(OBJ_DIR)/linkedlist.o $(OBJ_DIR)/list.o
+all: $(OBJ_DIR)/arraylist.o $(OBJ_DIR)/linkedlist.o $(OBJ_DIR)/list.o $(OBJ_DIR)/hashtable.o
 
 $(OBJ_DIR)/arraylist.o: arraylist.c arraylist.h
 	@mkdir -p $(OBJ_DIR)
@@ -21,6 +21,10 @@ $(OBJ_DIR)/linkedlist.o: linkedlist.c linkedlist.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(OBJ_DIR)/list.o: list.c list.h
+	@mkdir -p $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(OBJ_DIR)/hashtable.o: hashtable.c hashtable.h
 	@mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
