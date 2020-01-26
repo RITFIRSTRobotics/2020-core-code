@@ -43,17 +43,27 @@ $(TEST_OBJ_DIR)/test-list.o: $(TEST_DIR)/test-list.c
 	@mkdir -p $(TEST_OBJ_DIR)
 	$(CC) $(TESTFLAGS) -c -o $@ $<
 
-test: $(OBJ_DIR)/arraylist.o $(OBJ_DIR)/linkedlist.o $(OBJ_DIR)/list.o \
+$(TEST_OBJ_DIR)/test-hashtable.o: $(TEST_DIR)/test-hashtable.c
+	@mkdir -p $(TEST_OBJ_DIR)
+	$(CC) $(TESTFLAGS) -c -o $@ $<
+
+test-list: $(OBJ_DIR)/arraylist.o $(OBJ_DIR)/linkedlist.o $(OBJ_DIR)/list.o \
 	  $(OBJ_DIR)/stack.o $(OBJ_DIR)/queue.o $(TEST_OBJ_DIR)/test-list.o
 	$(CC) $(TESTFLAGS) $^ -o $(TEST_OBJ_DIR)/test-list
 	@echo "!!!!!!!! starting testing"
 	@$(TEST_OBJ_DIR)/test-list
 	@valgrind --leak-check=full --error-exitcode=1 $(TEST_OBJ_DIR)/test-list
 
+test-hashtable: $(OBJ_DIR)/hashtable.o $(OBJ_DIR)/arraylist.o $(OBJ_DIR)/linkedlist.o $(OBJ_DIR)/list.o $(TEST_OBJ_DIR)/test-hashtable.o
+	$(CC) $(TESTFLAGS) $^ -o $(TEST_OBJ_DIR)/test-hashtable
+	@echo "!!!!!!!! starting testing"
+	@$(TEST_OBJ_DIR)/test-hashtable
+	@valgrind --leak-check=full --error-exitcode=1 $(TEST_OBJ_DIR)/test-hashtable
+
 ### CI testing stuff
 
 ci-build: all
-ci-test: test
+ci-test: test-list test-hashtable
 
 ### Maintenece recipes
 
