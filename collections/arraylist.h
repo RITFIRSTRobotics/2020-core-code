@@ -11,12 +11,7 @@
 extern "C" {
 #endif
 
-// do some preprocessor voodoo
-#ifdef _LOCAL_HEADER
-    #include "list.h"
-#else
-    #include "core/collections/list.h"
-#endif
+#include "list.h"
 
 // Define list parameters
 #define DEFAULT_LIST_LENGTH 10

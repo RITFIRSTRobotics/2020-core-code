@@ -8,15 +8,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#ifdef _LOCAL_HEADER
-    #include "list.h"
-    #include "arraylist.h"
-    #include "linkedlist.h"
-#else
-    #include "core/collections/list.h"
-    #include "core/collections/arraylist.h"
-    #include "core/collections/linkedlist.h"
-#endif
+#include "list.h"
+#include "arraylist.h"
+#include "linkedlist.h"
 
 /**
  * @inherit

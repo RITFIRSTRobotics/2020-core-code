@@ -11,13 +11,17 @@ CC=gcc
 
 ### Build recipes
 
-all: ; # empty
+all: $(OBJ_DIR)/net_lowlevel.o
+
+$(OBJ_DIR)/net_lowlevel.o: lowlevel.c constants.h lowlevel.h
+	@mkdir -p $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 ### Testing recipes
 
 ### CI testing recipes
 
-ci-build: ; # empty
+ci-build: all
 ci-test:  ; # empty
 
 ### Maintnence recipes
