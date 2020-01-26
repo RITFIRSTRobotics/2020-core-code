@@ -5,12 +5,7 @@
 #ifndef INC_2020_CORE_CODE_HASHTABLE_H
 #define INC_2020_CORE_CODE_HASHTABLE_H
 
-// do some preprocessor voodoo
-#ifdef _LOCAL_HEADER
 #include "list.h"
-#else
-#include "core/collections/list.h"
-#endif
 
 typedef struct HashTable * HashTable_t;
 
