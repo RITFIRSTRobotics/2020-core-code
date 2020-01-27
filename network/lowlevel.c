@@ -39,16 +39,16 @@ static ArrayList_t* connections = NULL;
 // Argument structure for the acceptor thread
 typedef struct {
     int server_fd;
-    void (*on_connect)(NetworkConnection_t*);
+    void (*on_connect)(NetConnection_t*);
     void (*on_packet)(IntermediateTLV_t*);
 } AcceptorThreadArgs;
 
 /**
  * @inherit
  */
-NetworkConnection_t* llnet_connection_init() {
+NetConnection_t* llnet_connection_init() {
     // Get memory and set state to nothing
-    NetworkConnection_t* connection = malloc(sizeof(NetworkConnection_t));
+    NetConnection_t* connection = malloc(sizeof(NetConnection_t));
     connection->state = cs_NOTHING;
 
     // Setup the TCP socket
@@ -84,15 +84,15 @@ NetworkConnection_t* llnet_connection_init() {
 /**
  * @inherit
  */
-ClientNetworkConnection_t* llnet_connection_connect(NetworkConnection_t* connection, char* host, void (*handler)(IntermediateTLV_t*)) {
+WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection, char* host, void (*handler)(IntermediateTLV_t*)) {
     // Make sure this connection isn't already setup
     if (connection->state != cs_NOTHING) {
         dbg_warning("connection already made (status=%02x), returning...\n", connection->state);
-        return (ClientNetworkConnection_t*) connection;
+        return (WorkerConnection_t*) connection;
     }
 
-    // Update this structure to a ClientNetworkConnection
-    ClientNetworkConnection_t* client = realloc(connection, sizeof(ClientNetworkConnection_t));
+    // Update this structure to a WorkerConnection
+    WorkerConnection_t* client = realloc(connection, sizeof(WorkerConnection_t));
     connection = NULL;
     client->handler = handler;
     memset(&client->server_addr, 0, sizeof(struct sockaddr));
@@ -150,7 +150,7 @@ static void* llnet_acceptor_thread(void* _targs) {
     AcceptorThreadArgs* targs = (AcceptorThreadArgs*) _targs;
     while (true) {
         // Make the data structure
-        ClientNetworkConnection_t* client = malloc(sizeof(ClientNetworkConnection_t));
+        WorkerConnection_t* client = malloc(sizeof(WorkerConnection_t));
         client->handler = targs->on_packet;
         client->udp_fd = 0;
         
@@ -163,7 +163,7 @@ static void* llnet_acceptor_thread(void* _targs) {
         }
 
         // Call on_connect and add to the connection list
-        targs->on_connect((NetworkConnection_t*) client);
+        targs->on_connect((NetConnection_t*) client);
         arraylist_add(connections, client);
 
         // Spin up listener threads
@@ -178,7 +178,7 @@ static void* llnet_acceptor_thread(void* _targs) {
 /**
  * @inherit
  */
-void llnet_acceptor_start(void (*on_connect)(NetworkConnection_t*), void (*on_packet)(IntermediateTLV_t*)) {
+void llnet_acceptor_start(void (*on_connect)(NetConnection_t*), void (*on_packet)(IntermediateTLV_t*)) {
     // Setup the server socket
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) {
