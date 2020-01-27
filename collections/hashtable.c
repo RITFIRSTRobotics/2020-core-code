@@ -68,6 +68,11 @@ static int hashtable_findKeyLocation(HashTable_t ht, void* key)
  */
 static int hashtable_insert(HashTable_t ht, void* key, void* value)
 {
+    //NULL is not allowed as a key
+    if(key == NULL)
+    {
+        return 0;
+    }
     //Hash the key
     uint32_t loc = ht->hash(key);
     loc %= ht->mem_size;
@@ -102,7 +107,8 @@ static int hashtable_rehash(HashTable_t ht)
     void** oldValues = ht->values;
     size_t oldMemSize = ht->mem_size;
     //Calculate a new memory size guaranteed to be large enough
-    size_t newMemSize = ht->size * (ht->fill_ratio + 1);
+    //+2 to round up
+    size_t newMemSize = ht->mem_size * (ht->fill_ratio + 1 +1);
     //Allocate new memory and set it to 0
     ht->keys = (void**)(malloc(sizeof(void*) * newMemSize));
     memset(ht->keys, 0x00, sizeof(void*) * newMemSize);
