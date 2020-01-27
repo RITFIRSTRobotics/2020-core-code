@@ -32,6 +32,7 @@ static int hashtable_findKeyLocation(HashTable_t ht, void* key)
 {
     //Hash the key
     uint32_t loc = ht->hash(key);
+    loc %= ht->mem_size;
     uint32_t initialLoc = loc;
     do
     {
@@ -69,6 +70,7 @@ static int hashtable_insert(HashTable_t ht, void* key, void* value)
 {
     //Hash the key
     uint32_t loc = ht->hash(key);
+    loc %= ht->mem_size;
     //while the place we want to go is filled, increment, looping around to the start
     while(ht->keys[loc] != NULL)
     {
@@ -160,6 +162,7 @@ HashTable_t hashtable_initSize(uint32_t (*hash)(void*), int (*key_equals)(void*,
         free(ht);
         return NULL;
     }
+    memset(ht->keys, 0x00, sizeof(void*) * size);
     ht->values = (void**)(malloc(sizeof(void*) * size));
     //If memory allocation fails, return null because everything has gone wrong
     if(ht->values == NULL)
@@ -167,6 +170,7 @@ HashTable_t hashtable_initSize(uint32_t (*hash)(void*), int (*key_equals)(void*,
         free(ht);
         return NULL;
     }
+    memset(ht->values, 0x00, sizeof(void*) * size);
     ht->mem_size = size;
     return ht;
 }
@@ -180,12 +184,14 @@ int hashtable_put(HashTable_t ht, void* key, void* value)
         //Allocate memory so we obey the fill ratio, rounded up
         size_t newSize = (size_t)(1 + ht->fill_ratio + 1);
         ht->keys = (void**)(malloc(sizeof(void*) * newSize));
+        memset(ht->keys, 0x00, sizeof(void*) * newSize);
         //If memory allocation fails, return zero because everything has gone wrong
         if(ht->keys == NULL)
         {
             return 0;
         }
         ht->values = (void**)(malloc(sizeof(void*) * newSize));
+        memset(ht->keys, 0x00, sizeof(void*) * newSize);
         if(ht->values == NULL)
         {
             return 0;
