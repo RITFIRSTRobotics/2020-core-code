@@ -51,14 +51,14 @@ test-list: $(OBJ_DIR)/arraylist.o $(OBJ_DIR)/linkedlist.o $(OBJ_DIR)/list.o \
 	  $(OBJ_DIR)/stack.o $(OBJ_DIR)/queue.o $(TEST_OBJ_DIR)/test-list.o
 	$(CC) $(TESTFLAGS) $^ -o $(TEST_OBJ_DIR)/test-list
 	@echo "!!!!!!!! starting testing"
-	@$(TEST_OBJ_DIR)/test-list
 	@valgrind --leak-check=full --error-exitcode=1 $(TEST_OBJ_DIR)/test-list
+	@$(TEST_OBJ_DIR)/test-list
 
 test-hashtable: $(OBJ_DIR)/hashtable.o $(OBJ_DIR)/arraylist.o $(OBJ_DIR)/linkedlist.o $(OBJ_DIR)/list.o $(TEST_OBJ_DIR)/test-hashtable.o
 	$(CC) $(TESTFLAGS) $^ -o $(TEST_OBJ_DIR)/test-hashtable
 	@echo "!!!!!!!! starting testing"
-	@$(TEST_OBJ_DIR)/test-hashtable
 	@valgrind --leak-check=full --error-exitcode=1 $(TEST_OBJ_DIR)/test-hashtable
+	@$(TEST_OBJ_DIR)/test-hashtable
 
 ### CI testing stuff
 
