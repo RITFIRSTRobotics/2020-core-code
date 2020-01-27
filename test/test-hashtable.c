@@ -121,12 +121,12 @@ int t05_putGetInitialSizeNoRehash()
 int t06_putGetWithDefault()
 {
     int result = TEST_SUCCESS;
-    void* testVals[MAX_TEST_SIZE];
+    void* testvals[MAX_TEST_SIZE];
     HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
     for(unsigned long i = 0; i < MAX_TEST_SIZE; i++)
     {
-        testVals[i] =(void*) i;
-        hashtable_put(ht, testVals[i], testVals[i]);
+        testvals[i] =(void*) i;
+        hashtable_put(ht, testvals[i], testvals[i]);
     }
     //NULL (=0) is not allowed as a key
     for(unsigned long i = 1; i<MAX_TEST_SIZE; i++)
@@ -138,14 +138,14 @@ int t06_putGetWithDefault()
             printf("%d:%d\n",(int)ht_result, (int)(i));
         }
     }
-    void* defaultGet = hashtable_getWithDefault(ht, (void*) MAX_TEST_SIZE + 1, NULL);
-    if(defaultGet != NULL)
+    void* defaultget = hashtable_getWithDefault(ht, (void*) MAX_TEST_SIZE + 1, NULL);
+    if(defaultget != NULL)
     {
         result += TEST_FAILURE;
     }
-    //Test with another default value so we're sure it isn't always returning null
-    defaultGet = hashtable_getWithDefault(ht, (void*) MAX_TEST_SIZE + 1, (void*)1);
-    if(defaultGet != (void*)1)
+    //test with another default value so we're sure it isn't always returning NULL
+    defaultget = hashtable_getWithDefault(ht, (void*) MAX_TEST_SIZE + 1, (void*)1);
+    if(defaultget != (void*)1)
     {
         result += TEST_FAILURE;
     }
@@ -158,10 +158,84 @@ int t07_hashtableReturnsFailureOnNullKeyInsert()
     int result = TEST_SUCCESS;
     HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
     int putResult;
-    if(putResult = hashtable_put(ht, NULL, NULL) != 0)
+    if((putResult = hashtable_put(ht, NULL, NULL)) != 0)
     {
         printf("putResult: %d\n", putResult);
         result += TEST_FAILURE;
+    }
+    hashtable_destroy(ht);
+    return result;
+}
+
+int t08_remove()
+{
+    int result = TEST_SUCCESS;
+    void* testvals[MAX_TEST_SIZE];
+    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
+    for(unsigned long i = 0; i < MAX_TEST_SIZE; i++)
+    {
+        testvals[i] =(void*) i;
+        hashtable_put(ht, testvals[i], testvals[i]);
+    }
+    //NULL (=0) is not allowed as a key
+    for(unsigned long i = 1; i<MAX_TEST_SIZE; i++)
+    {
+        void* ht_result = hashtable_remove(ht, (void*)i);
+        if(ht_result!= (void*)i)
+        {
+            result += TEST_FAILURE;
+            printf("%d:%d\n",(int)ht_result, (int)(i));
+        }
+        ht_result = hashtable_get(ht, (void*)i);
+        if(ht_result != NULL)
+        {
+            result += TEST_FAILURE;
+            printf("Failed to remove key!");
+        }
+    }
+    hashtable_destroy(ht);
+    return result;
+}
+
+int t09_removeIfValue()
+{
+    int result = TEST_SUCCESS;
+    void* testvals[MAX_TEST_SIZE];
+    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
+    for(unsigned long i = 0; i < MAX_TEST_SIZE; i++)
+    {
+        testvals[i] =(void*) i;
+        hashtable_put(ht, testvals[i], testvals[i]);
+    }
+    //NULL (=0) is not allowed as a key
+    for(unsigned long i = 1; i<MAX_TEST_SIZE; i++)
+    {
+        void* ht_result = hashtable_removeIfValue(ht, (void*)i, i+1);
+        if(ht_result!= NULL)
+        {
+            result += TEST_FAILURE;
+        }
+        ht_result = hashtable_get(ht, (void*)i);
+        if(ht_result != (void*)i)
+        {
+            result += TEST_FAILURE;
+            printf("Unexpectedly removed key!");
+        }
+    }
+    for(unsigned long i = 1; i<MAX_TEST_SIZE; i++)
+    {
+        void* ht_result = hashtable_removeIfValue(ht, (void*)i, i);
+        if(ht_result!= (void*)i)
+        {
+            result += TEST_FAILURE;
+            printf("%d:%d\n",(int)ht_result, (int)(i));
+        }
+        ht_result = hashtable_get(ht, (void*)i);
+        if(ht_result != NULL)
+        {
+            result += TEST_FAILURE;
+            printf("Failed to remove key!");
+        }
     }
     hashtable_destroy(ht);
     return result;
@@ -245,6 +319,30 @@ int main() {
 
     printf("Starting Test07!\n");
     error = t07_hashtableReturnsFailureOnNullKeyInsert();
+    if(error == 0 )
+    {
+        printf("success!\n");
+    }
+    else
+    {
+        printf("^^^ test errors\n");
+    }
+    allErrors += error;
+
+    printf("Starting Test08!\n");
+    error = t08_remove();
+    if(error == 0 )
+    {
+        printf("success!\n");
+    }
+    else
+    {
+        printf("^^^ test errors\n");
+    }
+    allErrors += error;
+
+    printf("Starting Test09!\n");
+    error = t09_removeIfValue();
     if(error == 0 )
     {
         printf("success!\n");
