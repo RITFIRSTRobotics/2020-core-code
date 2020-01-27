@@ -5,6 +5,8 @@
  *
  * @author Connor Henley, @thatging3rkid
  */
+#define _DEFAULT_SOURCE // needed for hstrerror(...)
+ 
 // standards
 #include <stdio.h>
 #include <stdint.h>
@@ -14,6 +16,8 @@
 #include <stdbool.h>
 
 // networking
+#include <netdb.h>
+#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/ip.h>
@@ -27,6 +31,7 @@
 // local things
 #include "lowlevel.h"
 #include "constants.h"
+#include "../utils/dbgprint.h"
 #include "../collections/arraylist.h"
 
 static ArrayList_t* connections = NULL;
@@ -39,6 +44,102 @@ typedef struct {
 } AcceptorThreadArgs;
 
 /**
+ * @inherit
+ */
+NetworkConnection_t* llnet_connection_init() {
+    // Get memory and set state to nothing
+    NetworkConnection_t* connection = malloc(sizeof(NetworkConnection_t));
+    connection->state = cs_NOTHING;
+
+    // Setup the TCP socket
+    connection->tcp_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (connection->tcp_fd < 0) {
+        dbg_error("TCP socket creation failed: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    // Set the SO_REUSEADDR and SO_REUSEPORT flags (because resource leaks *will* happen)
+    int opt_value = 1;
+    int err = setsockopt(connection->tcp_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt_value, sizeof(opt_value));
+    if (err < 0) {
+        dbg_error("could not set socket options: %s\n", strerror(errno));
+        close(connection->tcp_fd);
+        free(connection);
+        exit(EXIT_FAILURE); // for now, exit on error
+    }
+
+    // Setup the UDP socket
+    connection->udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (connection->udp_fd < 0) {
+        dbg_error("error: UDP socket creation failed: %s\n", strerror(errno));
+        close(connection->udp_fd);
+        free(connection);
+        exit(EXIT_FAILURE); // for now, exit on error
+    }
+
+    // all finished
+    return connection;    
+}
+
+/**
+ * @inherit
+ */
+ClientNetworkConnection_t* llnet_connection_connect(NetworkConnection_t* connection, char* host, void (*handler)(IntermediateTLV_t*)) {
+    // Make sure this connection isn't already setup
+    if (connection->state != cs_NOTHING) {
+        dbg_warning("connection already made (status=%02x), returning...\n", connection->state);
+        return (ClientNetworkConnection_t*) connection;
+    }
+
+    // Update this structure to a ClientNetworkConnection
+    ClientNetworkConnection_t* client = realloc(connection, sizeof(ClientNetworkConnection_t));
+    connection = NULL;
+    client->handler = handler;
+    memset(&client->server_addr, 0, sizeof(struct sockaddr));
+    client->server_addr_len = 0;
+
+    // Need to get the address for the given host
+    struct hostent* host_addr = gethostbyname(host);
+    if (host_addr == NULL) {
+        dbg_warning("gethostbyname failed: %s\n", hstrerror(h_errno));
+        return client;
+    }
+
+// Debugging: print gethostbyname data
+#if false
+    dbg_info("struct hostent {\n");
+    dbg_info("\th_name=%s\n", host_addr->h_name);
+    dbg_info("\th_addrtype=%d\n", host_addr->h_addrtype);
+    dbg_info("\th_length=%d\n", host_addr->h_length);
+    dbg_info("\th_addr_list[0]=%s\n", inet_ntoa(*((struct in_addr*) host_addr->h_addr_list[0])));
+    dbg_info("}\n");
+#endif
+
+    // Setup the server address
+    client->server_addr.sin_family = AF_INET;
+    client->server_addr.sin_port = htons(PORT_NUMBER);
+    client->server_addr.sin_addr = *((struct in_addr*) host_addr->h_addr_list[0]);
+
+    // Create the TCP connection to the FMS
+    int err = connect(client->tcp_fd, (struct sockaddr*) &client->server_addr, sizeof(client->server_addr));
+    if (err < 0) {
+        dbg_warning("connect failed: %s\n", strerror(errno));
+        return client;
+    }
+
+    // Connection was successful
+    client->state = cs_CONNECTED;
+
+    // TODO start listener threads
+    
+    return client;
+}
+
+//
+// TODO continue reworking (all below)
+//
+
+/**
  * Accepts incoming connections, setup a data structure, call the on_connect
  * function, and spin up listener threads.
  *
@@ -49,24 +150,26 @@ static void* llnet_acceptor_thread(void* _targs) {
     AcceptorThreadArgs* targs = (AcceptorThreadArgs*) _targs;
     while (true) {
         // Make the data structure
-        NetworkConnection_t* connection = malloc(sizeof(NetworkConnection_t));
-        connection->handler = targs->on_packet;
-
+        ClientNetworkConnection_t* client = malloc(sizeof(ClientNetworkConnection_t));
+        client->handler = targs->on_packet;
+        client->udp_fd = 0;
+        
         // Accept the connection
-        connection->tcp_fd = accept(targs->server_fd, &connection->client_addr, &connection->client_addr_len);
-        if (connection->tcp_fd < 0) {
+        client->tcp_fd = accept(targs->server_fd, (struct sockaddr*) &client->server_addr, &client->server_addr_len);
+        if (client->tcp_fd < 0) {
             fprintf(stderr, "error: could not accept client: %s\n", strerror(errno));
-            free(connection);
+            free(client);
             continue;
         }
 
         // Call on_connect and add to the connection list
-        targs->on_connect(connection);
-        arraylist_add(connections, connection);
+        targs->on_connect((NetworkConnection_t*) client);
+        arraylist_add(connections, client);
 
         // Spin up listener threads
-        llnet_listener_tcp_start(connection);
-        llnet_listener_udp_start(connection);
+        // TODO
+
+        client->state = cs_CONNECTED;
     }
 
     return NULL;
@@ -75,8 +178,7 @@ static void* llnet_acceptor_thread(void* _targs) {
 /**
  * @inherit
  */
-void llnet_acceptor_start(void (*on_connect)(NetworkConnection_t*),
-        void (*on_packet)(IntermediateTLV_t*)) {
+void llnet_acceptor_start(void (*on_connect)(NetworkConnection_t*), void (*on_packet)(IntermediateTLV_t*)) {
     // Setup the server socket
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) {
