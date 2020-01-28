@@ -241,6 +241,108 @@ int t09_removeIfValue()
     return result;
 }
 
+int t10_replace()
+{
+    int result = TEST_SUCCESS;
+    void* testvals[MAX_TEST_SIZE];
+    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
+    for(unsigned long i = 0; i < MAX_TEST_SIZE; i++)
+    {
+        testvals[i] =(void*) i;
+        hashtable_put(ht, testvals[i], testvals[i]);
+    }
+    //NULL (=0) is not allowed as a key
+    for(unsigned long i = 1; i<MAX_TEST_SIZE; i++)
+    {
+        void* ht_result = hashtable_replace(ht, (void*)i, i+1);
+        if(ht_result != i)
+        {
+            result += TEST_FAILURE;
+        }
+        ht_result = hashtable_get(ht, (void*)i);
+        if(ht_result != (void*)(i + 1))
+        {
+            result += TEST_FAILURE;
+            printf("Failed to replace key!");
+        }
+    }
+    hashtable_destroy(ht);
+    return result;
+}
+
+int t11_replaceIfValue()
+{
+    int result = TEST_SUCCESS;
+    void* testvals[MAX_TEST_SIZE];
+    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
+    for(unsigned long i = 0; i < MAX_TEST_SIZE; i++)
+    {
+        testvals[i] =(void*) i;
+        hashtable_put(ht, testvals[i], testvals[i]);
+    }
+    //NULL (=0) is not allowed as a key
+    for(unsigned long i = 1; i<MAX_TEST_SIZE; i++)
+    {
+        void* ht_result = hashtable_replaceIfValue(ht, (void*)i, i+1, i+2);
+        if(ht_result!= NULL)
+        {
+            result += TEST_FAILURE;
+        }
+        ht_result = hashtable_get(ht, (void*)i);
+        if(ht_result != (void*)i)
+        {
+            result += TEST_FAILURE;
+            printf("Unexpectedly replaced key!");
+        }
+    }
+    for(unsigned long i = 1; i<MAX_TEST_SIZE; i++)
+    {
+        void* ht_result = hashtable_replaceIfValue(ht, (void*)i, i, i+1);
+        if(ht_result!= (void*)(i))
+        {
+            result += TEST_FAILURE;
+            printf("%d:%d\n",(int)ht_result, (int)(i));
+        }
+        ht_result = hashtable_get(ht, (void*)i);
+        if(ht_result != (void*)(i+1))
+        {
+            result += TEST_FAILURE;
+            printf("Failed to remove key!");
+        }
+    }
+    hashtable_destroy(ht);
+    return result;
+}
+
+int t12_checkContainsKey()
+{
+    int result = TEST_SUCCESS;
+    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
+    for(unsigned long i = 1; i < MAX_TEST_SIZE; i+=2)
+    {
+        hashtable_put(ht, testvals[i], testvals[i]);
+    }
+    for(unsigned long i = 1; i < MAX_TEST_SIZE * 2; i++)
+    {
+        if(i % 2 == 1)
+        {
+            if(!hashtable_containsKey(ht, i))
+            {
+                result += TEST_FAILURE;
+            }
+        }
+        else
+        {
+            if(hashtable_containsKey(ht, i))
+            {
+                result += TEST_FAILURE;
+            }
+        }
+    }
+    return result;
+
+}
+
 int main() {
     // Run tests on both types of list
     int error = 0;
@@ -344,6 +446,42 @@ int main() {
     printf("Starting Test09!\n");
     error = t09_removeIfValue();
     if(error == 0 )
+    {
+        printf("success!\n");
+    }
+    else
+    {
+        printf("^^^ test errors\n");
+    }
+    allErrors += error;
+
+    printf("Starting Test10!\n");
+    error = t10_replace();
+    if(error == 0)
+    {
+        printf("success!\n");
+    }
+    else
+    {
+        printf("^^^ test errors\n");
+    }
+    allErrors += error;
+
+    printf("Starting Test11!\n");
+    error = t11_replaceIfValue();
+    if(error == 0)
+    {
+        printf("success!\n");
+    }
+    else
+    {
+        printf("^^^ test errors\n");
+    }
+    allErrors += error;
+
+    printf("Starting Test11!\n");
+    error = t12_checkContainsKey();
+    if(error == 0)
     {
         printf("success!\n");
     }
