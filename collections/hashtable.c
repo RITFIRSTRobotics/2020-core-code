@@ -110,10 +110,8 @@ static int hashtable_rehash(HashTable_t ht)
     //+2 to round up
     size_t newMemSize = ht->mem_size * (ht->fill_ratio + 1 +1);
     //Allocate new memory and set it to 0
-    ht->keys = (void**)(malloc(sizeof(void*) * newMemSize));
-    memset(ht->keys, 0x00, sizeof(void*) * newMemSize);
-    ht->values = (void**)(malloc(sizeof(void*) * newMemSize));
-    memset(ht->values, 0x00, sizeof(void*) * newMemSize);
+    ht->keys = (void**)(calloc(newMemSize, sizeof(void*)));
+    ht->values = (void**)(calloc(newMemSize, sizeof(void*)));
     //TODO check for failure.
     ht->mem_size = newMemSize;
     //For all of the old memory
@@ -161,22 +159,20 @@ HashTable_t hashtable_initSize(uint32_t (*hash)(void*), int (*key_equals)(void*,
 {
     //Get an empty hash-table
     HashTable_t ht = hashtable_init(hash, key_equals, value_equals);
-    ht->keys = (void**)(malloc(sizeof(void*) * size));
+    ht->keys = (void**)(calloc(size, sizeof(void*)));
     //If memory allocation fails, return null because everything has gone wrong
     if(ht->keys == NULL)
     {
         free(ht);
         return NULL;
     }
-    memset(ht->keys, 0x00, sizeof(void*) * size);
-    ht->values = (void**)(malloc(sizeof(void*) * size));
+    ht->values = (void**)(calloc(size, sizeof(void*)));
     //If memory allocation fails, return null because everything has gone wrong
     if(ht->values == NULL)
     {
         free(ht);
         return NULL;
     }
-    memset(ht->values, 0x00, sizeof(void*) * size);
     ht->mem_size = size;
     return ht;
 }
@@ -189,15 +185,13 @@ int hashtable_put(HashTable_t ht, void* key, void* value)
     {
         //Allocate memory so we obey the fill ratio, rounded up
         size_t newSize = (size_t)(1 + ht->fill_ratio + 1);
-        ht->keys = (void**)(malloc(sizeof(void*) * newSize));
-        memset(ht->keys, 0x00, sizeof(void*) * newSize);
+        ht->keys = (void**)(calloc(newSize, sizeof(void*)));
         //If memory allocation fails, return zero because everything has gone wrong
         if(ht->keys == NULL)
         {
             return 0;
         }
-        ht->values = (void**)(malloc(sizeof(void*) * newSize));
-        memset(ht->keys, 0x00, sizeof(void*) * newSize);
+        ht->values = (void**)(calloc(newSize, sizeof(void*)));
         if(ht->values == NULL)
         {
             return 0;
@@ -348,7 +342,10 @@ List_t* hashtable_getKeys(HashTable_t ht)
     {
         if(ht->keys[i] != NULL)
         {
-            arraylist_add(keys, ht->keys[i]);
+            if(arraylist_add(keys, ht->keys[i]) != 0)
+            {
+                return NULL;
+            }
         }
     }
     return (List_t*)keys;

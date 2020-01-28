@@ -318,29 +318,115 @@ int t12_checkContainsKey()
 {
     int result = TEST_SUCCESS;
     HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
-    for(unsigned long i = 1; i < MAX_TEST_SIZE; i+=2)
+    //Insert odd keys into the hashtable
+    for(unsigned long i = 1; i < MAX_TEST_SIZE * 2; i+=2)
     {
-        hashtable_put(ht, testvals[i], testvals[i]);
+        hashtable_put(ht, (void*)i, (void*)i);
     }
     for(unsigned long i = 1; i < MAX_TEST_SIZE * 2; i++)
     {
+        //If we're missing an odd key according to containsKey, fail
         if(i % 2 == 1)
         {
-            if(!hashtable_containsKey(ht, i))
+            if(!hashtable_containsKey(ht, (void*)i))
             {
+                printf("Missing %lu\n", i);
                 result += TEST_FAILURE;
             }
         }
+        //If we have an even key according to containsKey, fail
         else
         {
-            if(hashtable_containsKey(ht, i))
+            if(hashtable_containsKey(ht, (void*)i))
             {
+                printf("Has %lu unexpectedly\n", i);
                 result += TEST_FAILURE;
             }
         }
     }
+    hashtable_destroy(ht);
     return result;
+}
 
+int t13_testContainsValue()
+{
+    int result = TEST_SUCCESS;
+    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
+    //Insert odd keys into the hashtable
+    for(unsigned long i = 1; i < MAX_TEST_SIZE * 2; i+=2)
+    {
+        hashtable_put(ht, (void*)i, (void*)i);
+    }
+    for(unsigned long i = 1; i < MAX_TEST_SIZE * 2; i++)
+    {
+        //If we're missing an odd key according to containsKey, fail
+        if(i % 2 == 1)
+        {
+            if(!hashtable_containsValue(ht, (void*)i))
+            {
+                printf("Missing %lu\n", i);
+                result += TEST_FAILURE;
+            }
+        }
+            //If we have an even key according to containsKey, fail
+        else
+        {
+            if(hashtable_containsValue(ht, (void*)i))
+            {
+                printf("Has %lu unexpectedly\n", i);
+                result += TEST_FAILURE;
+            }
+        }
+    }
+    hashtable_destroy(ht);
+    return result;
+}
+
+int t14_checkKeysList()
+{
+    int result = TEST_SUCCESS;
+    void* testvals[MAX_TEST_SIZE - 1];
+    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
+    for(unsigned long i = 1; i < MAX_TEST_SIZE; i++)
+    {
+        testvals[i - 1] =(void*) i;
+        hashtable_put(ht, i, i);
+    }
+    List_t* keys = hashtable_getKeys(ht);
+    if(keys == NULL)
+    {
+        printf("Error when creating list!\n");
+        return TEST_FAILURE;
+    }
+    //Check to make sure the size of the returned list is correct
+    if(list_size(keys) != MAX_TEST_SIZE - 1)
+    {
+        printf("Incorrect keysList size\n");
+        result += TEST_FAILURE;
+    }
+
+    void* listKey = NULL;
+    int failFlag;
+    for(unsigned long i = 1; i < MAX_TEST_SIZE; i++)
+    {
+        listKey = list_get(keys, i-1);
+        for(unsigned long j = 0; j < MAX_TEST_SIZE; j++)
+        {
+            failFlag = 1;
+            if(listKey == testvals[j])
+            {
+                failFlag = 0;
+            }
+        }
+        if(!failFlag)
+        {
+            result += TEST_FAILURE;
+            printf("Missing Key %lu\n", (unsigned long)listKey);
+        }
+    }
+    hashtable_destroy(ht);
+    list_free(keys);
+    return result;
 }
 
 int main() {
@@ -479,8 +565,32 @@ int main() {
     }
     allErrors += error;
 
-    printf("Starting Test11!\n");
+    printf("Starting Test12!\n");
     error = t12_checkContainsKey();
+    if(error == 0)
+    {
+        printf("success!\n");
+    }
+    else
+    {
+        printf("^^^ test errors\n");
+    }
+    allErrors += error;
+
+    printf("Starting Test13!\n");
+    error = t13_testContainsValue();
+    if(error == 0)
+    {
+        printf("success!\n");
+    }
+    else
+    {
+        printf("^^^ test errors\n");
+    }
+    allErrors += error;
+
+    printf("Starting Test14!\n");
+    error = t14_checkKeysList();
     if(error == 0)
     {
         printf("success!\n");
