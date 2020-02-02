@@ -211,7 +211,7 @@ Message Type: Denotes the type of message contained in this packet, see Table 1 
 Message Length: The length of the message, including the header, in bytes.
 Timestamp: The time, in milliseconds, since the \acrshort{fms} has started, stored as a 32 bit unsigned integer.
 Robots should update their timestamp to match that of the \acrshort{fms} when they recieve their initialization packet.\\
-Data: The data which this packet carries, which must be $Message Length - 8$ bytes long.\\
+Data: The data which this packet carries, which must be $Message Length$ bytes long.\\
 
 \subsection {INIT Packets}
 \paragraph{}

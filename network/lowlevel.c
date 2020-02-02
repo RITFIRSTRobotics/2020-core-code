@@ -5,7 +5,7 @@
  *
  * @author Connor Henley, @thatging3rkid
  */
-#define _DEFAULT_SOURCE // needed for hstrerror(...)
+#define _DEFAULT_SOURCE // needed for hstrerror(...), clock_gettime(...)
  
 // standards
 #include <stdio.h>
@@ -14,11 +14,17 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <sys/types.h>
+
+// math
+#include <math.h>
+
+// time
+#include <time.h>
 
 // networking
 #include <netdb.h>
 #include <arpa/inet.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/ip.h>
 
@@ -35,6 +41,7 @@
 #include "../collections/arraylist.h"
 
 static ArrayList_t* connections = NULL;
+static int32_t llnet_time_offset = 0; // this value is added on a send, subtracted on a recieve
 
 // Argument structure for the acceptor thread
 typedef struct {
@@ -42,6 +49,15 @@ typedef struct {
     void (*on_connect)(NetConnection_t*);
     void (*on_packet)(IntermediateTLV_t*);
 } AcceptorThreadArgs;
+
+// Argument structure for the network send function/thread
+typedef struct {
+    WorkerConnection_t* connection;
+    NetworkProtocol_t proto;
+    IntermediateTLV_t* packet;
+    uint32_t* rc;
+    bool* finished;
+} SendThreadArgs;
 
 /**
  * @inherit
@@ -95,8 +111,8 @@ WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection, char* 
     WorkerConnection_t* client = realloc(connection, sizeof(WorkerConnection_t));
     connection = NULL;
     client->handler = handler;
-    memset(&client->server_addr, 0, sizeof(struct sockaddr));
-    client->server_addr_len = 0;
+    memset(&client->other_addr, 0, sizeof(client->other_addr));
+    client->other_addr_len = 0;
 
     // Need to get the address for the given host
     struct hostent* host_addr = gethostbyname(host);
@@ -116,12 +132,12 @@ WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection, char* 
 #endif
 
     // Setup the server address
-    client->server_addr.sin_family = AF_INET;
-    client->server_addr.sin_port = htons(PORT_NUMBER);
-    client->server_addr.sin_addr = *((struct in_addr*) host_addr->h_addr_list[0]);
+    client->other_addr.sin_family = AF_INET;
+    client->other_addr.sin_port = htons(PORT_NUMBER);
+    client->other_addr.sin_addr = *((struct in_addr*) host_addr->h_addr_list[0]);
 
     // Create the TCP connection to the FMS
-    int err = connect(client->tcp_fd, (struct sockaddr*) &client->server_addr, sizeof(client->server_addr));
+    int err = connect(client->tcp_fd, (struct sockaddr*) &client->other_addr, sizeof(client->other_addr));
     if (err < 0) {
         dbg_warning("connect failed: %s\n", strerror(errno));
         return client;
@@ -133,6 +149,106 @@ WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection, char* 
     // TODO start listener threads
     
     return client;
+}
+
+/**
+ * Sends a packet out over the network
+ *
+ * @param _targs the argument structure
+ * @returns NULL
+ * @note function will always clean up the argument structure
+ */
+static void* _llnet_pckt_send(void* _targs) {
+    // Convert to the correct structure type
+    SendThreadArgs* targs = (SendThreadArgs*) _targs;
+
+    // Get a buffer to copy the packet into
+    uint32_t buf_len = targs->packet->length + LLNET_HEADER_LENGTH;
+    uint8_t* buf = malloc(buf_len);
+
+    // Generate the first word
+    uint32_t pckt_len_net = htonl(targs->packet->length);
+    memcpy(buf, &pckt_len_net, sizeof(uint32_t));
+    buf[0] = targs->packet->type;
+
+    // Get the timestamp and convert to milliseconds
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    uint32_t timestamp = (uint32_t) ((ts.tv_sec * 1000) + round(ts.tv_nsec / 1.0e6) + llnet_time_offset);
+    memcpy((buf + 4), &timestamp, sizeof(uint32_t));
+
+    // Copy the remaining data
+    memcpy((buf + LLNET_HEADER_LENGTH), targs->packet->data, targs->packet->length);
+
+    int err; // save errors
+
+    // Handle the send based on the protocol
+    if (targs->proto == np_TCP) {
+        // Send the data using TCP
+        err = write(targs->connection->tcp_fd, buf, buf_len);
+    } else if (targs->proto == np_UDP) {
+        // Send the data using UDP
+        err = sendto(targs->connection->udp_fd, buf, buf_len, MSG_CONFIRM, (const struct sockaddr*) &targs->connection->other_addr,
+            targs->connection->other_addr_len);
+    }
+
+    // Store the error
+    if (err < 0 && targs->rc != NULL) {
+        *(targs->rc) = err;
+    } else {
+        *(targs->rc) = 0;
+    }
+
+    // Mark that we're finished
+    if (targs->finished != NULL) {
+        *(targs->finished) = true;
+    }
+
+    // Clean up
+    free(buf);
+    free(targs);
+    targs = NULL;
+
+    return NULL;
+}
+
+
+/**
+ * @inherit
+ */
+uint32_t llnet_connection_send(WorkerConnection_t* connection, NetworkProtocol_t proto, IntermediateTLV_t* packet) {
+    uint32_t* rc = malloc(sizeof(uint32_t)); // get some memory for the return value
+
+    // Make the "thread arguments"
+    SendThreadArgs* stargs = malloc(sizeof(SendThreadArgs));
+    stargs->connection = connection;
+    stargs->proto = proto;
+    stargs->packet = packet;
+    stargs->rc = rc;
+    stargs->finished = NULL;
+
+    _llnet_pckt_send((void*) stargs);
+
+    uint32_t ret = *(rc);
+    free(rc);
+    return ret;
+}
+
+/**
+ * @inherit
+ */
+void llnet_connection_send_thread(WorkerConnection_t* connection, NetworkProtocol_t proto, IntermediateTLV_t* packet, uint32_t* rc, bool* finished) {
+    // Make the thread arguments
+    SendThreadArgs* stargs = malloc(sizeof(SendThreadArgs));
+    stargs->connection = connection;
+    stargs->proto = proto;
+    stargs->packet = packet;
+    stargs->rc = rc;
+    stargs->finished = finished;
+
+    // Start the thread
+    pthread_t t;
+    pthread_create(&t, NULL, _llnet_pckt_send, (void*) stargs);
 }
 
 //
@@ -155,7 +271,7 @@ static void* llnet_acceptor_thread(void* _targs) {
         client->udp_fd = 0;
         
         // Accept the connection
-        client->tcp_fd = accept(targs->server_fd, (struct sockaddr*) &client->server_addr, &client->server_addr_len);
+        client->tcp_fd = accept(targs->server_fd, (struct sockaddr*) &client->other_addr, &client->other_addr_len);
         if (client->tcp_fd < 0) {
             fprintf(stderr, "error: could not accept client: %s\n", strerror(errno));
             free(client);

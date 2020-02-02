@@ -16,6 +16,8 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
+#define LLNET_HEADER_LENGTH (8)
+
 // Define an enum that keeps track of the current state of a listener
 typedef enum ListenerStatus {
     ls_OKAY         = 0x00,
@@ -62,9 +64,9 @@ typedef struct WorkerConnection {
     // incoming packet handler
     void (*handler)(IntermediateTLV_t*);
 
-    // server address (used for TCP and UDP)
-    struct sockaddr_in server_addr;
-    socklen_t server_addr_len;
+    // address of the other connection (used for TCP and UDP)
+    struct sockaddr_in other_addr;
+    socklen_t other_addr_len;
 } WorkerConnection_t;
 
 // Defines a structure to store connection information for acceptor threads
@@ -125,12 +127,25 @@ WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection,
  * @param proto the protocol to use (TCP vs UDP); this should match the definition
  *        in the control protocol.
  * @param packet the packet to send out, in IntermediateTLV form
- * @param new_thread if true, this send will be done in a new thread
  * @returns the error code from the failed OS interaction, if one occured. A result
  *          of zero indicates success.
  */
 uint32_t llnet_connection_send(WorkerConnection_t* connection,
-    NetworkProtocol_t proto, IntermediateTLV_t packet, bool new_thread);
+    NetworkProtocol_t proto, IntermediateTLV_t* packet);
+/**
+ * Sends a packet over the network in a new thread
+ *
+ * @param connection the connection to send the packet out using (e.g. which robot
+ *        should the packet be sent to). Can be sent either with a connected client
+ *        network connection or a listening server network connection.
+ * @param proto the protocol to use (TCP vs UDP); this should match the definition
+ *        in the control protocol.
+ * @param packet the packet to send out, in IntermediateTLV form
+ * @returns rc the return code of any system calls (zero on success).
+ * @returns finished when true, the thread has finished
+ */
+void llnet_connection_send_thread(WorkerConnection_t* connection,
+    NetworkProtocol_t proto, IntermediateTLV_t* packet, uint32_t* rc, bool* finished);
 
 /**
  * Sets this network connection to an acceptor connection. This is done by
