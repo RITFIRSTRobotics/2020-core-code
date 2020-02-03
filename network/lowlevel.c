@@ -94,10 +94,8 @@ static void* _llnet_pckt_send(void* _targs) {
     }
 
     // Store the error
-    if (err < 0 && targs->rc != NULL) {
-        *(targs->rc) = err;
-    } else {
-        *(targs->rc) = 0;
+    if (targs->rc != NULL) {
+        *(targs->rc) = (err < 0)? err : 0;
     }
 
     // Mark that we're finished
@@ -162,6 +160,11 @@ static void* _llnet_accepter_thread(void* _targs) {
     }
 
     return NULL;
+}
+
+IntermediateTLV_t* _llnet_pckt_decode(uint8_t* buf, uint32_t buf_len) {
+
+    
 }
 
 /**
