@@ -33,8 +33,8 @@ typedef enum NetworkProtocol {
 // Defines the possible states of a connection (unconnected, listening, connected)
 typedef enum ConnectionState {
     cs_NOTHING,
-    cs_LISTENER,
-    cs_CONNECTED
+    cs_ACCEPTER,
+    cs_WORKER
 } ConnectionState_t;
 
 // Defines a structure to store a minimally decoded packet
@@ -46,23 +46,30 @@ typedef struct IntermediateTLV {
 
 // Defines an "abstract" structure to store network connection information
 typedef struct NetConnection {
+#pragma pack(push, 1) // disable struct packing
+
     // Shared fields
-    ConnectionState_t state;
-    int tcp_fd;
-    int udp_fd;
+    ConnectionState_t state; // what type of structure this is
+    int tcp_fd; // file descriptor of the tcp socket
+    int udp_fd; // file descriptor of the udp socket
+    bool thread_stop; // when true, any listener threads should stop
+    void (*on_packet)(IntermediateTLV_t*); // handler function for incoming packets
+
+#pragma pack(pop) // return struct packing
 } NetConnection_t;
 
 // Defines a structure to store connection information for "worker" connections
 // or those that are actually being used to transfer packets.
 //@inherit from NetConnection_t
 typedef struct WorkerConnection {
+#pragma pack(push, 1) // disable struct packing
     // "inherited"
     ConnectionState_t state;
     int tcp_fd;
     int udp_fd;
-
-    // incoming packet handler
-    void (*handler)(IntermediateTLV_t*);
+    bool thread_stop;
+    void (*on_packet)(IntermediateTLV_t*);
+#pragma pack(pop) // return struct packing
 
     // address of the other connection (used for TCP and UDP)
     struct sockaddr_in other_addr;
@@ -72,21 +79,23 @@ typedef struct WorkerConnection {
 // Defines a structure to store connection information for acceptor threads
 //@inherit from NetConnection_t
 typedef struct AccepterConnection {
+#pragma pack(push, 1) // disable struct packing
     // "inherited"
     ConnectionState_t state;
     int tcp_fd;
     int udp_fd;
+    bool thread_stop;
+    void (*on_packet)(IntermediateTLV_t*);
+#pragma pack(pop) // return struct packing
 
     // incoming connection handler
-    void (*connected)(WorkerConnection_t*);
+    void (*on_connect)(WorkerConnection_t*);
 
     // TCP listener
-    ListenerStatus_t* tcp_status;
+    ListenerStatus_t tcp_status;
 
     // UDP listener
-    ListenerStatus_t* udp_status;
-    struct sockaddr_in client_addr;
-    socklen_t client_addr_len;
+    ListenerStatus_t udp_status;
 } AccepterConnection_t;
 
 /**
@@ -153,18 +162,22 @@ void llnet_connection_send_thread(WorkerConnection_t* connection,
  * thread to accept new TCP connections and create the worker connection for the
  * new connection.
  *
+ * @param connection the network connection to use to accept new connections.
+ *        This structure will be converted to a AccepterConnection structure,
+ *        it's memory will be realloc'd by this function and returned.
  * @param (*on_connect) the handler function that is called after every new
  *        connection. The function is passed a pointer to a structure that can
  *        contains connection data and can be used to send a packet.
  * @param (*on_packet) the handler function that gets called on every incoming
  *        packet. This function is passed to the listener threads for the worker
  *        connection, which then calls it on every incoming packet.
+ * @returns the converted network connection structure.
  * @note this should only be run on the server-side of the connection (i.e. FMS)
  *       but this code resides in core so that it can be tested with the rest 
  *       of the low-level networking code.
  */
-AccepterConnection_t* llnet_connection_listen(void (*on_connect)(WorkerConnection_t*),
-    void (*on_packet)(IntermediateTLV_t*));
+AccepterConnection_t* llnet_connection_listen(NetConnection_t* connection,
+    void (*on_connect)(WorkerConnection_t*), void (*on_packet)(IntermediateTLV_t*));
 
 /**
  * Cleans up the network connection
