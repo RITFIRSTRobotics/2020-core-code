@@ -21,7 +21,8 @@ extern "C" {
 // Define an enum that keeps track of the current state of a listener
 typedef enum ListenerStatus {
     ls_OKAY         = 0x00,
-    ls_DISCONNECTED = 0x01
+    ls_DISCONNECTED = 0x01,
+    ls_NOT_STARTED  = 0xff
 } ListenerStatus_t;
 
 // Defines the possible protocols that can be used to send a packet
@@ -41,6 +42,7 @@ typedef enum ConnectionState {
 typedef struct IntermediateTLV {
     uint32_t type:8;
     uint32_t length:24;
+    uint32_t timestamp;
     uint8_t* data;
 } IntermediateTLV_t;
 
@@ -74,6 +76,10 @@ typedef struct WorkerConnection {
     // address of the other connection (used for TCP and UDP)
     struct sockaddr_in other_addr;
     socklen_t other_addr_len;
+
+    // status of the listeners
+    ListenerStatus_t tcp_status;
+    ListenerStatus_t udp_status;
 } WorkerConnection_t;
 
 // Defines a structure to store connection information for acceptor threads
@@ -90,12 +96,6 @@ typedef struct AccepterConnection {
 
     // incoming connection handler
     void (*on_connect)(WorkerConnection_t*);
-
-    // TCP listener
-    ListenerStatus_t tcp_status;
-
-    // UDP listener
-    ListenerStatus_t udp_status;
 } AccepterConnection_t;
 
 /**
@@ -135,7 +135,8 @@ WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection,
  *        network connection or a listening server network connection.
  * @param proto the protocol to use (TCP vs UDP); this should match the definition
  *        in the control protocol.
- * @param packet the packet to send out, in IntermediateTLV form
+ * @param packet the packet to send out, in IntermediateTLV form. The timestamp
+ *        value in this packet is overwritten with the sent time.
  * @returns the error code from the failed OS interaction, if one occured. A result
  *          of zero indicates success.
  */
@@ -149,7 +150,8 @@ uint32_t llnet_connection_send(WorkerConnection_t* connection,
  *        network connection or a listening server network connection.
  * @param proto the protocol to use (TCP vs UDP); this should match the definition
  *        in the control protocol.
- * @param packet the packet to send out, in IntermediateTLV form
+ * @param packet the packet to send out, in IntermediateTLV form. The timestamp
+  *        value in this packet is overwritten with the sent time.
  * @returns rc the return code of any system calls (zero on success).
  * @returns finished when true, the thread has finished
  */

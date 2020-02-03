@@ -40,6 +40,8 @@
 #include "../utils/dbgprint.h"
 #include "../collections/arraylist.h"
 
+#define _LLNET_UDP_BUFFER_LENGTH (65535)
+
 static ArrayList_t* connections = NULL;
 static int32_t llnet_time_offset = 0; // this value is added on a send, subtracted on a recieve
 
@@ -75,7 +77,8 @@ static void* _llnet_pckt_send(void* _targs) {
     // Get the timestamp and convert to milliseconds
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
-    uint32_t timestamp = (uint32_t) ((ts.tv_sec * 1000) + round(ts.tv_nsec / 1.0e6) + llnet_time_offset);
+    targs->packet->timestamp = (uint32_t) ((ts.tv_sec * 1000) + round(ts.tv_nsec / 1.0e6) + llnet_time_offset);
+    uint32_t timestamp = htonl(targs->packet->timestamp);
     memcpy((buf + 4), &timestamp, sizeof(uint32_t));
 
     // Copy the remaining data
@@ -112,6 +115,105 @@ static void* _llnet_pckt_send(void* _targs) {
 }
 
 /**
+ * Listens for incoming TCP data, decodes the data, then hands them to the handler
+ *
+ * @param _targs the connection to listen on
+ * @returns NULL
+ */
+static void* _llnet_listener_tcp(void* _targs) {
+    WorkerConnection_t* worker = (WorkerConnection_t*) _targs;
+    worker->tcp_status = ls_OKAY;
+
+    while (worker->thread_stop == false) {
+        // Get some memory to store the data
+        IntermediateTLV_t* tlv = malloc(sizeof(IntermediateTLV_t));
+
+        // Read the first word of the header
+        uint32_t header;
+        read(worker->tcp_fd, &header, sizeof(uint32_t));
+
+        // Start the decode
+        tlv->type = (header & 0xff000000) >> 24;
+        tlv->length = ntohl((header & 0xffffff));
+
+        // Read the timestamp
+        uint32_t timestamp;
+        read(worker->tcp_fd, &timestamp, sizeof(uint32_t));
+        tlv->timestamp = ntohl(timestamp);
+
+        // Read the rest of the data into the packet
+        tlv->data = malloc(tlv->length);
+        int err = read(worker->tcp_fd, tlv->data, tlv->length);
+
+        // Error checking
+        if (err < 0) {
+            dbg_info("error reading TCP socket: %s\n", strerror(errno));
+            free(tlv);
+            break;
+        }
+
+        // Call the handler
+        worker->on_packet(tlv);
+    }
+
+    worker->tcp_status = ls_DISCONNECTED;
+    return NULL;
+}
+
+/**
+ * Listens for incoming UDP data, decodes the data, the hands them to the handler
+ *
+ * @param _targs the connection to listen to
+ * @returns NULL
+ */
+static void* _llnet_listener_udp(void* _targs) {
+    WorkerConnection_t* worker = (WorkerConnection_t*) _targs;
+    worker->udp_status = ls_OKAY;
+    uint8_t* buf = malloc(_LLNET_UDP_BUFFER_LENGTH);
+
+    while (worker->thread_stop == false) {
+        // Get some memory to store the data
+        IntermediateTLV_t* tlv = malloc(sizeof(IntermediateTLV_t));
+
+        // Get the UDP packet in full
+        int recv = recvfrom(worker->udp_fd, buf, _LLNET_UDP_BUFFER_LENGTH, MSG_WAITALL, (struct sockaddr*) &worker->other_addr,
+            &worker->other_addr_len);
+
+        // Error checking
+        if (recv < 0) {
+            dbg_info("error reading UDP socket: %s\n", strerror(errno));
+            free(tlv);
+            break;
+        }
+        if (recv < LLNET_HEADER_LENGTH) {
+            dbg_warning("invalid header length %u\n", recv);
+            free(tlv);
+            continue;
+        }
+
+        // Start the decode
+        uint32_t header = ((uint32_t*) buf)[0];
+        tlv->type = (header & 0xff000000) >> 24;
+        tlv->length = ntohl((header & 0xffffff));
+
+        // Decode the timestamp
+        uint32_t timestamp = ((uint32_t*) buf)[1];
+        tlv->timestamp = ntohl(timestamp);
+
+        // Save the rest of the data
+        tlv->data = malloc(tlv->length);
+        memcpy(tlv->data, (buf + LLNET_HEADER_LENGTH), tlv->length);
+
+        // Call the handler
+        worker->on_packet(tlv);
+    }
+
+    worker->udp_status = ls_DISCONNECTED;
+    free(buf);
+    return NULL;
+}
+
+/**
  * Accepts incoming connections over TCP, creates the necessary data structures
  * for the connection, and start the listener threads.
  *
@@ -138,6 +240,8 @@ static void* _llnet_accepter_thread(void* _targs) {
         // Fill in everything else
         worker->thread_stop = false;
         worker->on_packet = accepter->on_packet;
+        worker->tcp_status = ls_NOT_STARTED;
+        worker->udp_status = ls_NOT_STARTED;
 
         // Accept the connection
         worker->tcp_fd = accept(accepter->tcp_fd, (struct sockaddr*) &worker->other_addr, &worker->other_addr_len);
@@ -154,17 +258,16 @@ static void* _llnet_accepter_thread(void* _targs) {
         }
         arraylist_add(connections, worker);
 
-        // TODO spin up listeners
-
         worker->state = cs_WORKER;
+
+        // Start listener threads
+        pthread_t thrd_tcp;
+        pthread_create(&thrd_tcp, NULL, &_llnet_listener_tcp, (void*) worker);
+        pthread_t thrd_udp;
+        pthread_create(&thrd_udp, NULL, &_llnet_listener_udp, (void*) worker);
     }
 
     return NULL;
-}
-
-IntermediateTLV_t* _llnet_pckt_decode(uint8_t* buf, uint32_t buf_len) {
-
-    
 }
 
 /**
@@ -218,17 +321,20 @@ WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection, char* 
     }
 
     // Update this structure to a WorkerConnection
-    WorkerConnection_t* client = realloc(connection, sizeof(WorkerConnection_t));
+    WorkerConnection_t* worker = realloc(connection, sizeof(WorkerConnection_t));
     connection = NULL;
-    client->on_packet = handler;
-    memset(&client->other_addr, 0, sizeof(client->other_addr));
-    client->other_addr_len = 0;
+    worker->tcp_status = ls_NOT_STARTED;
+    worker->udp_status = ls_NOT_STARTED;
+
+    worker->on_packet = handler;
+    memset(&worker->other_addr, 0, sizeof(worker->other_addr));
+    worker->other_addr_len = 0;
 
     // Need to get the address for the given host
     struct hostent* host_addr = gethostbyname(host);
     if (host_addr == NULL) {
         dbg_warning("gethostbyname failed: %s\n", hstrerror(h_errno));
-        return client;
+        return worker;
     }
 
 // Debugging: print gethostbyname data
@@ -242,23 +348,27 @@ WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection, char* 
 #endif
 
     // Setup the server address
-    client->other_addr.sin_family = AF_INET;
-    client->other_addr.sin_port = htons(PORT_NUMBER);
-    client->other_addr.sin_addr = *((struct in_addr*) host_addr->h_addr_list[0]);
+    worker->other_addr.sin_family = AF_INET;
+    worker->other_addr.sin_port = htons(PORT_NUMBER);
+    worker->other_addr.sin_addr = *((struct in_addr*) host_addr->h_addr_list[0]);
 
     // Create the TCP connection to the FMS
-    int err = connect(client->tcp_fd, (struct sockaddr*) &client->other_addr, sizeof(client->other_addr));
+    int err = connect(worker->tcp_fd, (struct sockaddr*) &worker->other_addr, sizeof(worker->other_addr));
     if (err < 0) {
         dbg_warning("connect failed: %s\n", strerror(errno));
-        return client;
+        return worker;
     }
 
     // Connection was successful
-    client->state = cs_WORKER;
+    worker->state = cs_WORKER;
 
-    // TODO start listener threads
+    // Start listener threads
+    pthread_t thrd_tcp;
+    pthread_create(&thrd_tcp, NULL, &_llnet_listener_tcp, (void*) worker);
+    pthread_t thrd_udp;
+    pthread_create(&thrd_udp, NULL, &_llnet_listener_udp, (void*) worker);
 
-    return client;
+    return worker;
 }
 
 /**
