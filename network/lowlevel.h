@@ -16,6 +16,10 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
+// includes networking types
+#include <sys/socket.h>
+#include <netinet/ip.h>
+
 #define LLNET_HEADER_LENGTH (8)
 
 // Define an enum that keeps track of the current state of a listener
@@ -77,9 +81,11 @@ typedef struct WorkerConnection {
     struct sockaddr_in other_addr;
     socklen_t other_addr_len;
 
-    // status of the listeners
+    // listeners
     ListenerStatus_t tcp_status;
+    pthread_t tcp_thread;
     ListenerStatus_t udp_status;
+    pthread_t udp_thread;
 } WorkerConnection_t;
 
 // Defines a structure to store connection information for acceptor threads
@@ -96,6 +102,9 @@ typedef struct AccepterConnection {
 
     // incoming connection handler
     void (*on_connect)(WorkerConnection_t*);
+
+    // thread data
+    pthread_t accepter_thread;
 } AccepterConnection_t;
 
 /**

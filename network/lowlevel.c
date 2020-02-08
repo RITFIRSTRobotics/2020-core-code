@@ -244,6 +244,7 @@ static void* _llnet_accepter_thread(void* _targs) {
         worker->udp_status = ls_NOT_STARTED;
 
         // Accept the connection
+        worker->other_addr_len = 0;
         worker->tcp_fd = accept(accepter->tcp_fd, (struct sockaddr*) &worker->other_addr, &worker->other_addr_len);
         if (worker->tcp_fd < 0) {
             dbg_warning("could not accept client: %s\n", strerror(errno));
@@ -261,10 +262,8 @@ static void* _llnet_accepter_thread(void* _targs) {
         worker->state = cs_WORKER;
 
         // Start listener threads
-        pthread_t thrd_tcp;
-        pthread_create(&thrd_tcp, NULL, &_llnet_listener_tcp, (void*) worker);
-        pthread_t thrd_udp;
-        pthread_create(&thrd_udp, NULL, &_llnet_listener_udp, (void*) worker);
+        pthread_create(&worker->tcp_thread, NULL, &_llnet_listener_tcp, (void*) worker);
+        pthread_create(&worker->udp_thread, NULL, &_llnet_listener_udp, (void*) worker);
     }
 
     return NULL;
@@ -289,7 +288,7 @@ NetConnection_t* llnet_connection_init() {
 
     // Set the SO_REUSEADDR and SO_REUSEPORT flags (because resource leaks *will* happen)
     int opt_value = 1;
-    int err = setsockopt(connection->tcp_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt_value, sizeof(opt_value));
+    int err = setsockopt(connection->tcp_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt_value, sizeof(int));
     if (err < 0) {
         dbg_error("could not set socket options: %s\n", strerror(errno));
         close(connection->tcp_fd);
@@ -327,7 +326,7 @@ WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection, char* 
     worker->udp_status = ls_NOT_STARTED;
 
     worker->on_packet = handler;
-    memset(&worker->other_addr, 0, sizeof(worker->other_addr));
+    memset(&worker->other_addr, 0, sizeof(struct sockaddr_in));
     worker->other_addr_len = 0;
 
     // Need to get the address for the given host
@@ -353,7 +352,7 @@ WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection, char* 
     worker->other_addr.sin_addr = *((struct in_addr*) host_addr->h_addr_list[0]);
 
     // Create the TCP connection to the FMS
-    int err = connect(worker->tcp_fd, (struct sockaddr*) &worker->other_addr, sizeof(worker->other_addr));
+    int err = connect(worker->tcp_fd, (struct sockaddr*) &worker->other_addr, sizeof(struct sockaddr_in));
     if (err < 0) {
         dbg_warning("connect failed: %s\n", strerror(errno));
         return worker;
@@ -363,10 +362,8 @@ WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection, char* 
     worker->state = cs_WORKER;
 
     // Start listener threads
-    pthread_t thrd_tcp;
-    pthread_create(&thrd_tcp, NULL, &_llnet_listener_tcp, (void*) worker);
-    pthread_t thrd_udp;
-    pthread_create(&thrd_udp, NULL, &_llnet_listener_udp, (void*) worker);
+    pthread_create(&worker->tcp_thread, NULL, &_llnet_listener_tcp, (void*) worker);
+    pthread_create(&worker->udp_thread, NULL, &_llnet_listener_udp, (void*) worker);
 
     return worker;
 }
@@ -420,6 +417,7 @@ void llnet_connection_send_thread(WorkerConnection_t* connection, NetworkProtoco
     // Start the thread
     pthread_t t;
     pthread_create(&t, NULL, _llnet_pckt_send, (void*) stargs);
+    // TODO clean thread memory
 }
 
 /**
@@ -446,7 +444,7 @@ AccepterConnection_t* llnet_connection_listen(NetConnection_t* connection, void 
     addr.sin_addr.s_addr = INADDR_ANY;
 
     // Bind the socket to accept any incoming connections for the FMS
-    int err = bind(accepter->tcp_fd, (struct sockaddr*) &addr, sizeof(addr));
+    int err = bind(accepter->tcp_fd, (struct sockaddr*) &addr, sizeof(struct sockaddr_in));
     if (err < 0) {
         fprintf(stderr, "error: could not bind socket: %s\n", strerror(errno));
         close(accepter->tcp_fd);

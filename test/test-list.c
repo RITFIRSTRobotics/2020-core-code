@@ -18,14 +18,12 @@
 #include <pthread.h>
 #include <stdbool.h>
 
+#include "test-utils.h"
 #include "../collections/list.h"
 #include "../collections/arraylist.h"
 #include "../collections/linkedlist.h"
 #include "../collections/stack.h"
 #include "../collections/queue.h"
-
-#define TEST_SUCCESS 0
-#define TEST_FAILURE 1
 
 #define FULL_TEST_ITEMS 2048
 
@@ -39,14 +37,6 @@ typedef struct {
 } ThreadData;
 
 #define THREAD_TEST_ITEMS 2048
-
-/**
- * Returns the number of elements in a static array
- *
- * @macro
- * @param a the array
- */
-#define num_elements(a) (sizeof(a)/sizeof(a[0])) // returns the number of elements in the array
 
 /**
  * Prints debugging information about the given list

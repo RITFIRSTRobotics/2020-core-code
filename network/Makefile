@@ -5,7 +5,6 @@
 # include some default flags
 include ../defaults.mk
 
-
 OBJ_DIR=../obj
 TEST_DIR=../test
 TEST_OBJ_DIR=$(TEST_DIR)/obj
@@ -31,7 +30,17 @@ $(OBJ_DIR)/netutils.o: netutils.c netutils.h
 
 ### Testing recipes
 
+$(TEST_OBJ_DIR)/test-llnet.o: $(TEST_DIR)/test-llnet.c $(TEST_DIR)/test-utils.h
+	@mkdir -p $(TEST_OBJ_DIR)
+	$(CC) $(TESTFLAGS) -c -o $@ $<
+
+test-llnet: $(OBJ_DIR)/lowlevel.o $(TEST_OBJ_DIR)/test-llnet.o $(OBJ_DIR)/arraylist.o
+	$(CC) $(TESTFLAGS) -o $(TEST_OBJ_DIR)/test-llnet $^ -lm # gcc wants -lm at the end
+	@echo "!!!!!!!! starting testing"
+	@valgrind --leak-check=full --error-exitcode=1 $(TEST_OBJ_DIR)/test-llnet
+	@$(TEST_OBJ_DIR)/test-llnet
+
 ### CI testing recipes
 
 ci-build: all
-ci-test:  ; # empty
+ci-test:  test-llnet
