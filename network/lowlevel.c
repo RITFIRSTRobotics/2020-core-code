@@ -128,12 +128,12 @@ static void* _llnet_listener_tcp(void* _targs) {
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
-    while (worker->thread_stop == false) {
+    while (true) {
         // Get some memory to store the data
         IntermediateTLV_t* tlv = malloc(sizeof(IntermediateTLV_t));
 
         // Read the first word of the header
-        uint32_t header = 0;
+        uint32_t header;
         int err = read(worker->tcp_fd, &header, sizeof(uint32_t));
 
         // Error checking
@@ -148,7 +148,7 @@ static void* _llnet_listener_tcp(void* _targs) {
         tlv->length = ntohl((header & 0xffffff));
 
         // Read the timestamp
-        uint32_t timestamp = 0;
+        uint32_t timestamp;
         read(worker->tcp_fd, &timestamp, sizeof(uint32_t));
         tlv->timestamp = ntohl(timestamp);
 
@@ -186,7 +186,7 @@ static void* _llnet_listener_udp(void* _targs) {
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
-    while (worker->thread_stop == false) {
+    while (true) {
         // Get some memory to store the data
         IntermediateTLV_t* tlv = malloc(sizeof(IntermediateTLV_t));
 
@@ -243,7 +243,7 @@ static void* _llnet_accepter_thread(void* _targs) {
     pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
     // Loop until someone tells us not to
-    while (accepter->thread_stop == false) {
+    while (true) {
         // Make a data structure
         WorkerConnection_t* worker = malloc(sizeof(WorkerConnection_t));
         worker->udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -257,7 +257,6 @@ static void* _llnet_accepter_thread(void* _targs) {
         }
 
         // Fill in everything else
-        worker->thread_stop = false;
         worker->on_packet = accepter->on_packet;
         worker->tcp_status = ls_NOT_STARTED;
         worker->udp_status = ls_NOT_STARTED;
@@ -295,7 +294,6 @@ NetConnection_t* llnet_connection_init() {
     // Get memory and set state to nothing
     NetConnection_t* connection = malloc(sizeof(NetConnection_t));
     connection->state = cs_NOTHING;
-    connection->thread_stop = false;
     connection->on_packet = NULL;
 
     // Setup the TCP socket

@@ -58,7 +58,6 @@ typedef struct NetConnection {
     ConnectionState_t state; // what type of structure this is
     int tcp_fd; // file descriptor of the tcp socket
     int udp_fd; // file descriptor of the udp socket
-    bool thread_stop; // when true, any listener threads should stop
     void (*on_packet)(IntermediateTLV_t*); // handler function for incoming packets
 
 #pragma pack(pop) // return struct packing
@@ -73,7 +72,6 @@ typedef struct WorkerConnection {
     ConnectionState_t state;
     int tcp_fd;
     int udp_fd;
-    bool thread_stop;
     void (*on_packet)(IntermediateTLV_t*);
 #pragma pack(pop) // return struct packing
 
@@ -96,7 +94,6 @@ typedef struct AccepterConnection {
     ConnectionState_t state;
     int tcp_fd;
     int udp_fd;
-    bool thread_stop;
     void (*on_packet)(IntermediateTLV_t*);
 #pragma pack(pop) // return struct packing
 
