@@ -3,9 +3,21 @@
 # Makefile defaults shared amongst the project
 #
 # @author Connor Henley, @thatging3rkid
-CC=/bin/gcc
-CFLAGS=-Wall -Wextra -std=c11 -pthread -lm
-TESTFLAGS=-g $(CFLAGS)
+
+# Layout the basics
+GCC = /usr/bin/gcc
+CFLAGS_BASE = -Wall -Wextra -std=c11
+CFLAGS_RELEASE = $(CFLAGS_BASE) -O2
+CFLAGS_DEBUG = -g $(CFLAGS_BASE)
+export LD_FLAGS = -pthread -lm
+
+# Now pick the right set of flags
+export CC=$(GCC)
+ifdef BUILD_RELEASE
+export CFLAGS = $(CFLAGS_RELEASE)
+else
+export CFLAGS = $(CFLAGS_DEBUG)
+endif
 
 all: # empty
 

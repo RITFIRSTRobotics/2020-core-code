@@ -1,5 +1,5 @@
 /**
- * test/test-llnet.c
+ * core/test/test-llnet.c
  *
  * Tests low level networking functionality
  *
@@ -8,14 +8,16 @@
 #define _DEFAULT_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <stdbool.h>
 
 #include "test-utils.h"
 #include "../network/lowlevel.h"
+#include "../collections/arraylist.h"
 
 // Debug stuff
 #include "../utils/dbgprint.h"
+
+static ArrayList_t* t02_connections = NULL;
 
 /**
  * Test the creation of low level networking structures
@@ -29,9 +31,9 @@ int t01_creation() {
 static void t02_on_connect(WorkerConnection_t* c) {
 #if true
     dbg_info("connection created\n");
-#else
-    {}; // do nothing
 #endif
+
+    arraylist_add(t02_connections, c);
 }
 
 static void t02_on_packet(IntermediateTLV_t* pckt) {
@@ -43,13 +45,20 @@ static void t02_on_packet(IntermediateTLV_t* pckt) {
  * Attempt to create a mock network and send some data around
  */
 int t02_send_data() {
-    // First, start the accepter
-    AccepterConnection_t* accepter = llnet_connection_listen(llnet_connection_init(), 
+    // Initialize the basics
+    t02_connections = arraylist_init();
+    AccepterConnection_t* accepter = llnet_connection_listen(llnet_connection_init(),
         t02_on_connect, t02_on_packet);
 
-    usleep(5000); // 5ms, should be more then enough time for a listtner
+    msleep(5); // give some time for the accepter to start up
+
+    // Connect to the accepter
+    WorkerConnection_t* worker1 = llnet_connection_connect(llnet_connection_init(),
+        "localhost", t02_on_packet);
 
     // Clean up resources
+    msleep(10);
+    llnet_connection_free((NetConnection_t*) worker1);
     llnet_connection_free((NetConnection_t*) accepter);
 
     return TEST_SUCCESS;
@@ -73,4 +82,3 @@ int main() {
         return EXIT_FAILURE;
     }
 }
-

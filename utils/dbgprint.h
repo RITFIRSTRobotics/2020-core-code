@@ -22,7 +22,7 @@ extern "C" {
  * @note MUST be a macro to expand correctly
  * @note newline is not printed
  */
-#define dbg_info(str...) fprintf(stderr, "[inf][%s:%d] ", __FILE__, __LINE__); fprintf(stderr, str);
+#define dbg_info(str...) fprintf(stderr, "[info][%s:%d] ", __FILE__, __LINE__); fprintf(stderr, str);
 
 /**
  * Print a warning string to stderr with line and file info
@@ -31,7 +31,7 @@ extern "C" {
  * @note: MUST be a macro to expand correctly
  * @note newline is not printed
  */
-#define dbg_warning(str...) fprintf(stderr, "[wrn][%s:%d] ", __FILE__, __LINE__); fprintf(stderr, str);
+#define dbg_warning(str...) fprintf(stderr, "[warn][%s:%d] ", __FILE__, __LINE__); fprintf(stderr, str);
 
 /**
  * Print an error string to stderr with file and line info
@@ -40,7 +40,7 @@ extern "C" {
  * @note: MUST be a macro to expand correctly
  * @note newline is not printed
  */
-#define dbg_error(str...) fprintf(stderr, "[err][%s:%d] ", __FILE__, __LINE__); fprintf(stderr, str);
+#define dbg_error(str...) fprintf(stderr, "[*err][%s:%d] ", __FILE__, __LINE__); fprintf(stderr, str);
 
 #ifdef __cplusplus
 }

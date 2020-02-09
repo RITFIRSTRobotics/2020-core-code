@@ -124,26 +124,37 @@ static void* _llnet_listener_tcp(void* _targs) {
     WorkerConnection_t* worker = (WorkerConnection_t*) _targs;
     worker->tcp_status = ls_OKAY;
 
+    // Enable deferred cancelling (this is default, but expected behavior)
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+
     while (worker->thread_stop == false) {
         // Get some memory to store the data
         IntermediateTLV_t* tlv = malloc(sizeof(IntermediateTLV_t));
 
         // Read the first word of the header
-        uint32_t header;
-        read(worker->tcp_fd, &header, sizeof(uint32_t));
+        uint32_t header = 0;
+        int err = read(worker->tcp_fd, &header, sizeof(uint32_t));
+
+        // Error checking
+        if (err < 0) {
+            dbg_info("error reading TCP socket: %s\n", strerror(errno));
+            free(tlv);
+            break;
+        }
 
         // Start the decode
         tlv->type = (header & 0xff000000) >> 24;
         tlv->length = ntohl((header & 0xffffff));
 
         // Read the timestamp
-        uint32_t timestamp;
+        uint32_t timestamp = 0;
         read(worker->tcp_fd, &timestamp, sizeof(uint32_t));
         tlv->timestamp = ntohl(timestamp);
 
         // Read the rest of the data into the packet
         tlv->data = malloc(tlv->length);
-        int err = read(worker->tcp_fd, tlv->data, tlv->length);
+        err = read(worker->tcp_fd, tlv->data, tlv->length);
 
         // Error checking
         if (err < 0) {
@@ -170,6 +181,10 @@ static void* _llnet_listener_udp(void* _targs) {
     WorkerConnection_t* worker = (WorkerConnection_t*) _targs;
     worker->udp_status = ls_OKAY;
     uint8_t* buf = malloc(_LLNET_UDP_BUFFER_LENGTH);
+
+    // Enable deferred cancelling (this is default, but expected behavior)
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
     while (worker->thread_stop == false) {
         // Get some memory to store the data
@@ -222,6 +237,10 @@ static void* _llnet_listener_udp(void* _targs) {
  */
 static void* _llnet_accepter_thread(void* _targs) {
     AccepterConnection_t* accepter = (AccepterConnection_t*) _targs;
+
+    // Enable deferred cancelling (this is default, but expected behavior)
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
     // Loop until someone tells us not to
     while (accepter->thread_stop == false) {
@@ -417,7 +436,7 @@ void llnet_connection_send_thread(WorkerConnection_t* connection, NetworkProtoco
     // Start the thread
     pthread_t t;
     pthread_create(&t, NULL, _llnet_pckt_send, (void*) stargs);
-    // TODO clean thread memory
+    pthread_detach(t); // automatically releases resources when finished
 }
 
 /**
@@ -458,8 +477,7 @@ AccepterConnection_t* llnet_connection_listen(NetConnection_t* connection, void 
     connections = arraylist_init();
 
     // Spin up the acceptor thread
-    pthread_t t;
-    pthread_create(&t, NULL, &_llnet_accepter_thread, (void*) accepter);
+    pthread_create(&accepter->accepter_thread, NULL, &_llnet_accepter_thread, (void*) accepter);
 
     return accepter;
 }
@@ -468,6 +486,26 @@ AccepterConnection_t* llnet_connection_listen(NetConnection_t* connection, void 
  * @inherit
  */
 void llnet_connection_free(NetConnection_t* connection) {
+    if (connection->state == cs_WORKER) {
+        // Do worker specific clean-up
+        WorkerConnection_t* worker = (WorkerConnection_t*) connection;
+
+        // Clean the TCP thread: cancel it and free resources by calling join
+        pthread_cancel(worker->tcp_thread);
+        pthread_join(worker->tcp_thread, NULL);
+
+        // Clean the UDP thread: cancel it and free resources by calling join
+        pthread_cancel(worker->udp_thread);
+        pthread_join(worker->udp_thread, NULL);
+    } else if (connection-> state == cs_ACCEPTER) {
+        // Do accepter specific clean-up
+        AccepterConnection_t* accepter = (AccepterConnection_t*) connection;
+
+        // Clean the thread: cancel it and free resources by calling join
+        pthread_cancel(accepter->accepter_thread);
+        pthread_join(accepter->accepter_thread, NULL);
+    }
+
     close(connection->tcp_fd);
     connection->tcp_fd = 0;
 
