@@ -17,6 +17,8 @@
 // Debug stuff
 #include "../utils/dbgprint.h"
 
+#define T02_PCKT_LENGTH (8)
+
 static ArrayList_t* t02_connections = NULL;
 
 /**
@@ -65,6 +67,42 @@ int t02_send_data() {
     // Connect to the accepter
     WorkerConnection_t* worker1 = llnet_connection_connect(llnet_connection_init(),
         "localhost", t02_on_packet);
+
+    // Wait for the listener to connect
+    uint32_t size;
+    bool connected = false;
+    for (size_t i = 0; i < 10; i += 1) {
+        size = arraylist_size(t02_connections);
+
+        // Client connected correctly
+        if (size == 1) {
+            connected = true;
+            break;
+        } else {
+            usleep(500); // wait before polling again
+        }
+    }
+
+    // Return failure if the host did not connected after 10 tries
+    if (!connected) {
+        dbg_error("connections length is incorrect (length = %u)\n", size);
+        arraylist_free(t02_connections);
+        llnet_connection_free((NetConnection_t*) worker1);
+        llnet_connection_free((NetConnection_t*) accepter);
+        return TEST_FAILURE;
+    }
+
+    // Build a packet to send
+    IntermediateTLV_t* pckt1 = malloc(sizeof(IntermediateTLV_t));
+    pckt1->type = 0xab; // pick a random type, shouldn't matter
+    pckt1->length = T02_PCKT_LENGTH;
+    pckt1->data = malloc(T02_PCKT_LENGTH);
+    ((uint64_t*) pckt1->data)[0] = 0x1234567890abcdef;
+
+    // Send the packet and free resources
+    llnet_connection_send(worker1, np_TCP, pckt1);
+    free(pckt1->data);
+    free(pckt1);
 
     // Clean up resources
     msleep(10);

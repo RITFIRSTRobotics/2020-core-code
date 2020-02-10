@@ -32,7 +32,7 @@ extern "C" {
  * @macro
  * @param t the length of time to sleep for (in milliseconds)
  */
-#define msleep(t) usleep(t*1000)
+#define msleep(t) usleep(((t)*1000))
 
 #ifdef __cplusplus
 }

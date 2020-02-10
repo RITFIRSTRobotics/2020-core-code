@@ -160,8 +160,9 @@ static void* _llnet_listener_tcp(void* _targs) {
         }
 
         // Start the decode
+        header = ntohl(header);
         tlv->type = (header & 0xff000000) >> 24;
-        tlv->length = ntohl((header & 0xffffff));
+        tlv->length = header & 0xffffff;
 
         // Read the timestamp
         uint32_t timestamp;
@@ -240,9 +241,9 @@ static void* _llnet_listener_udp(void* _targs) {
         }
 
         // Start the decode
-        uint32_t header = ((uint32_t*) buf)[0];
+        uint32_t header = ntohl(((uint32_t*) buf)[0]);
         tlv->type = (header & 0xff000000) >> 24;
-        tlv->length = ntohl((header & 0xffffff));
+        tlv->length = (header & 0xffffff);
 
         // Decode the timestamp
         uint32_t timestamp = ((uint32_t*) buf)[1];
