@@ -194,6 +194,13 @@ AccepterConnection_t* llnet_connection_listen(NetConnection_t* connection,
  */
 void llnet_connection_free(NetConnection_t* connection);
 
+/**
+ * Cleans up low level networking packet
+ *
+ * @param packet the packet to clean up
+ */
+void llnet_packet_free(IntermediateTLV_t* packet);
+
 #ifdef __cplusplus
 }
 #endif

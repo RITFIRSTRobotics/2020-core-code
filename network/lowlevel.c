@@ -557,3 +557,13 @@ void llnet_connection_free(NetConnection_t* connection) {
 
     free(connection);
 }
+
+/**
+ * @inherit
+ */
+void llnet_packet_free(IntermediateTLV_t* packet) {
+    if (packet->data != NULL) {
+        free(packet->data);
+    }
+    free(packet);
+}
