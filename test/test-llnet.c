@@ -28,6 +28,11 @@ int t01_creation() {
     return TEST_SUCCESS;
 }
 
+/**
+ * Simple on-connection handler
+ *
+ * @param c the new connection
+ */
 static void t02_on_connect(WorkerConnection_t* c) {
 #if true
     dbg_info("connection created\n");
@@ -36,6 +41,11 @@ static void t02_on_connect(WorkerConnection_t* c) {
     arraylist_add(t02_connections, c);
 }
 
+/**
+ * Simple on-packet handler
+ *
+ * @param pckt the packet recieved
+ */
 static void t02_on_packet(IntermediateTLV_t* pckt) {
     dbg_info("packet recieved: type=0x%02x, len=%u, timestamp=%u\n", pckt->type, pckt->length, pckt->timestamp);
     free(pckt);

@@ -27,6 +27,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/ip.h>
+#include <netinet/tcp.h>
 
 // threading
 #include <pthread.h>
@@ -41,6 +42,16 @@
 #include "../collections/arraylist.h"
 
 #define _LLNET_UDP_BUFFER_LENGTH (65535)
+
+/**
+ * Finds the minimum of the two values
+ *
+ * @macro
+ * @param a the first value
+ * @param b the second value
+ * @note this does not prevent against double evaluation
+ */
+#define min(a, b) (((a)<(b)) ? (a) : (b))
 
 static ArrayList_t* connections = NULL;
 static int32_t llnet_time_offset = 0; // this value is added on a send, subtracted on a recieve
@@ -134,11 +145,16 @@ static void* _llnet_listener_tcp(void* _targs) {
 
         // Read the first word of the header
         uint32_t header;
-        int err = read(worker->tcp_fd, &header, sizeof(uint32_t));
+        int nread = read(worker->tcp_fd, &header, sizeof(uint32_t));
 
-        // Error checking
-        if (err < 0) {
-            dbg_info("error reading TCP socket: %s\n", strerror(errno));
+        // Handle errors from the read
+        if (nread <= 0) {
+            // Handle an unexpected error
+            if (nread < 0) {
+                dbg_info("error reading TCP socket: %s\n", strerror(errno));
+            }
+
+            // Generic clean-up
             free(tlv);
             break;
         }
@@ -149,18 +165,31 @@ static void* _llnet_listener_tcp(void* _targs) {
 
         // Read the timestamp
         uint32_t timestamp;
-        read(worker->tcp_fd, &timestamp, sizeof(uint32_t));
+        read(worker->tcp_fd, &timestamp, sizeof(uint32_t)); // assume no errors
         tlv->timestamp = ntohl(timestamp);
 
         // Read the rest of the data into the packet
         tlv->data = malloc(tlv->length);
-        err = read(worker->tcp_fd, tlv->data, tlv->length);
+        int32_t tread = 0;
+        while (tlv->length > tread) {
+            // Read all the data from the OS buffer
+            nread = read(worker->tcp_fd, tlv->data, (tlv->length - tread));
 
-        // Error checking
-        if (err < 0) {
-            dbg_info("error reading TCP socket: %s\n", strerror(errno));
-            free(tlv);
-            break;
+            // Handle errors from the read
+            if (nread <= 0) {
+                // Handle an unexpected error
+                if (nread < 0) {
+                    dbg_info("error reading TCP socket: %s\n", strerror(errno));
+                }
+
+                // Generic clean-up
+                free(tlv->data);
+                free(tlv);
+                break;
+            } else {
+                // Normal case, mark the data read
+                tread += nread;
+            }
         }
 
         // Call the handler
@@ -191,17 +220,21 @@ static void* _llnet_listener_udp(void* _targs) {
         IntermediateTLV_t* tlv = malloc(sizeof(IntermediateTLV_t));
 
         // Get the UDP packet in full
-        int recv = recvfrom(worker->udp_fd, buf, _LLNET_UDP_BUFFER_LENGTH, MSG_WAITALL, (struct sockaddr*) &worker->other_addr,
-            &worker->other_addr_len);
+        int nread = recvfrom(worker->udp_fd, buf, _LLNET_UDP_BUFFER_LENGTH, MSG_WAITALL,
+            (struct sockaddr*) &worker->other_addr, &worker->other_addr_len);
 
-        // Error checking
-        if (recv < 0) {
-            dbg_info("error reading UDP socket: %s\n", strerror(errno));
+        // Handle errors from the read
+        if (nread <= 0) {
+            // Handle an unexpected error
+            if (nread < 0) {
+                dbg_info("error reading UDP socket: %s\n", strerror(errno));
+            }
+
             free(tlv);
             break;
         }
-        if (recv < LLNET_HEADER_LENGTH) {
-            dbg_warning("invalid header length %u\n", recv);
+        if (nread < LLNET_HEADER_LENGTH) {
+            dbg_warning("invalid header length %u\n", nread);
             free(tlv);
             continue;
         }
@@ -217,7 +250,7 @@ static void* _llnet_listener_udp(void* _targs) {
 
         // Save the rest of the data
         tlv->data = malloc(tlv->length);
-        memcpy(tlv->data, (buf + LLNET_HEADER_LENGTH), tlv->length);
+        memcpy(tlv->data, (buf + LLNET_HEADER_LENGTH), min(tlv->length, nread - LLNET_HEADER_LENGTH));
 
         // Call the handler
         worker->on_packet(tlv);
@@ -264,6 +297,8 @@ static void* _llnet_accepter_thread(void* _targs) {
         // Accept the connection
         worker->other_addr_len = 0;
         worker->tcp_fd = accept(accepter->tcp_fd, (struct sockaddr*) &worker->other_addr, &worker->other_addr_len);
+
+        // Handle error: unexpected error
         if (worker->tcp_fd < 0) {
             dbg_warning("could not accept client: %s\n", strerror(errno));
             close(worker->udp_fd);
@@ -306,6 +341,15 @@ NetConnection_t* llnet_connection_init() {
     // Set the SO_REUSEADDR and SO_REUSEPORT flags (because resource leaks *will* happen)
     int opt_value = 1;
     int err = setsockopt(connection->tcp_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt_value, sizeof(int));
+    if (err < 0) {
+        dbg_error("could not set socket options: %s\n", strerror(errno));
+        close(connection->tcp_fd);
+        free(connection);
+        exit(EXIT_FAILURE); // for now, exit on error
+    }
+
+    // Disable Nagle's algorithm: this will decrease OS buffering of TCP packets
+    err = setsockopt(connection->tcp_fd, IPPROTO_TCP, TCP_NODELAY, &opt_value, sizeof(int));
     if (err < 0) {
         dbg_error("could not set socket options: %s\n", strerror(errno));
         close(connection->tcp_fd);
