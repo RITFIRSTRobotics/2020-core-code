@@ -55,6 +55,8 @@
 
 static ArrayList_t* connections = NULL;
 static int32_t llnet_time_offset = 0; // this value is added on a send, subtracted on a recieve
+static uint32_t next_connection_id = 1; // this value will be used as the next connection id
+static pthread_mutex_t next_connection_id_mutex = PTHREAD_MUTEX_INITIALIZER; // mutex for the next connection ID
 
 // Argument structure for the network send function/thread
 typedef struct {
@@ -194,7 +196,7 @@ static void* _llnet_listener_tcp(void* _targs) {
         }
 
         // Call the handler
-        worker->on_packet(tlv);
+        worker->on_packet(worker->connection_id, tlv);
     }
 
     worker->tcp_status = ls_DISCONNECTED;
@@ -254,7 +256,7 @@ static void* _llnet_listener_udp(void* _targs) {
         memcpy(tlv->data, (buf + LLNET_HEADER_LENGTH), min(tlv->length, nread - LLNET_HEADER_LENGTH));
 
         // Call the handler
-        worker->on_packet(tlv);
+        worker->on_packet(worker->connection_id, tlv);
     }
 
     worker->udp_status = ls_DISCONNECTED;
@@ -294,6 +296,13 @@ static void* _llnet_accepter_thread(void* _targs) {
         worker->on_packet = accepter->on_packet;
         worker->tcp_status = ls_NOT_STARTED;
         worker->udp_status = ls_NOT_STARTED;
+
+        // Get the connection_id lock, save it's value, increment, and return the lock
+        pthread_mutex_lock(&next_connection_id_mutex);
+        dbg_info("next_id=%u\n", next_connection_id);
+        worker->connection_id = next_connection_id;
+        next_connection_id += 1;
+        pthread_mutex_unlock(&next_connection_id_mutex);
 
         // Accept the connection
         worker->other_addr_len = 0;
@@ -374,7 +383,28 @@ NetConnection_t* llnet_connection_init() {
 /**
  * @inherit
  */
-WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection, char* host, void (*handler)(IntermediateTLV_t*)) {
+WorkerConnection_t* llnet_connection_get(uint32_t id) {
+    // Make sure we have a list to search
+    if (connections == NULL) {
+        return NULL;
+    }
+
+    // Check all connections
+    WorkerConnection_t* res = NULL;
+    for (size_t i = 0; i < arraylist_size(connections); i += 1) {
+        WorkerConnection_t* w = (WorkerConnection_t*) arraylist_get(connections, i);
+        if (w->connection_id == id) {
+            res = w;
+            break;
+        }
+    }
+    return res;
+}
+
+/**
+ * @inherit
+ */
+WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection, char* host, void (*handler)(uint32_t, IntermediateTLV_t*)) {
     // Make sure this connection isn't already setup
     if (connection->state != cs_NOTHING) {
         dbg_warning("connection already made (state=0x%02x), returning...\n", connection->state);
@@ -390,6 +420,19 @@ WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection, char* 
     worker->on_packet = handler;
     memset(&worker->other_addr, 0, sizeof(struct sockaddr_in));
     worker->other_addr_len = 0;
+
+    // Add this connection to the list
+    if (connections == NULL) {
+        connections = arraylist_init();
+    }
+    arraylist_add(connections, worker);
+
+    // Get the connection_id lock, save it's value, increment, and return the lock
+    pthread_mutex_lock(&next_connection_id_mutex);
+        dbg_info("next_id=%u\n", next_connection_id);
+    worker->connection_id = next_connection_id;
+    next_connection_id += 1;
+    pthread_mutex_unlock(&next_connection_id_mutex);
 
     // Need to get the address for the given host
     struct hostent* host_addr = gethostbyname(host);
@@ -485,7 +528,7 @@ void llnet_connection_send_thread(WorkerConnection_t* connection, NetworkProtoco
 /**
  * @inherit
  */
-AccepterConnection_t* llnet_connection_listen(NetConnection_t* connection, void (*on_connect)(WorkerConnection_t*), void (*on_packet)(IntermediateTLV_t*)) {
+AccepterConnection_t* llnet_connection_listen(NetConnection_t* connection, void (*on_connect)(WorkerConnection_t*), void (*on_packet)(uint32_t, IntermediateTLV_t*)) {
     // Make sure the connection isn't already setup
     if (connection->state != cs_NOTHING) {
         dbg_warning("connection already made (state=0x%02x)\n", connection->state);

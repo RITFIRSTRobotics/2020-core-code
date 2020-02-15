@@ -58,7 +58,7 @@ typedef struct NetConnection {
     ConnectionState_t state; // what type of structure this is
     int tcp_fd; // file descriptor of the tcp socket
     int udp_fd; // file descriptor of the udp socket
-    void (*on_packet)(IntermediateTLV_t*); // handler function for incoming packets
+    void (*on_packet)(uint32_t, IntermediateTLV_t*); // handler function for incoming packets
 
 #pragma pack(pop) // return struct packing
 } NetConnection_t;
@@ -72,7 +72,7 @@ typedef struct WorkerConnection {
     ConnectionState_t state;
     int tcp_fd;
     int udp_fd;
-    void (*on_packet)(IntermediateTLV_t*);
+    void (*on_packet)(uint32_t, IntermediateTLV_t*); // handler function for incoming packets
 #pragma pack(pop) // return struct packing
 
     // address of the other connection (used for TCP and UDP)
@@ -84,6 +84,9 @@ typedef struct WorkerConnection {
     pthread_t tcp_thread;
     ListenerStatus_t udp_status;
     pthread_t udp_thread;
+
+    // connection id
+    uint32_t connection_id;
 } WorkerConnection_t;
 
 // Defines a structure to store connection information for acceptor threads
@@ -94,7 +97,7 @@ typedef struct AccepterConnection {
     ConnectionState_t state;
     int tcp_fd;
     int udp_fd;
-    void (*on_packet)(IntermediateTLV_t*);
+    void (*on_packet)(uint32_t, IntermediateTLV_t*); // handler function for incoming packets
 #pragma pack(pop) // return struct packing
 
     // incoming connection handler
@@ -110,6 +113,14 @@ typedef struct AccepterConnection {
  * @return the "abstract" connection data structure
  */
 NetConnection_t* llnet_connection_init();
+
+/**
+ * Gets the matching connection for this connection ID
+ *
+ * @param id the connection ID that needs to be resolved
+ * @returns the matching connection for this ID, or NULL if one does not exist
+ */
+WorkerConnection_t* llnet_connection_get(uint32_t id);
 
 /**
  * Connects the client to a server. This process converts the connection to a 
@@ -131,7 +142,7 @@ NetConnection_t* llnet_connection_init();
  * @returns the converted network connection structure.
  */
 WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection, 
-    char* host, void (*handler)(IntermediateTLV_t*));
+    char* host, void (*handler)(uint32_t, IntermediateTLV_t*));
 
 /**
  * Sends a packet over the network
@@ -148,6 +159,7 @@ WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection,
  */
 uint32_t llnet_connection_send(WorkerConnection_t* connection,
     NetworkProtocol_t proto, IntermediateTLV_t* packet);
+
 /**
  * Sends a packet over the network in a new thread
  *
@@ -185,7 +197,7 @@ void llnet_connection_send_thread(WorkerConnection_t* connection,
  *       of the low-level networking code.
  */
 AccepterConnection_t* llnet_connection_listen(NetConnection_t* connection,
-    void (*on_connect)(WorkerConnection_t*), void (*on_packet)(IntermediateTLV_t*));
+    void (*on_connect)(WorkerConnection_t*), void (*on_packet)(uint32_t, IntermediateTLV_t*));
 
 /**
  * Cleans up the network connection
