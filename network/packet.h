@@ -18,6 +18,8 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
+#define NUM_PACKET_TYPES 10
+
 // Defines an identifier for each different type of packet sent
 typedef enum PacketType {
     pt_INIT            = 0x00,
