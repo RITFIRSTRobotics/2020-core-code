@@ -163,6 +163,25 @@ int t02_send_data() {
     llnet_packet_free(pckt_recvd);
     pckt_recvd = NULL;
 
+    // Build a new packet to send
+    IntermediateTLV_t* pckt2 = malloc(sizeof(IntermediateTLV_t));
+    pckt2->type = 0xcd; // pick a random type, it shouldn't matter
+    pckt2->length = T02_PCKT_LENGTH;
+    pckt2->data = malloc(T02_PCKT_LENGTH);
+    ((uint64_t*) pckt2->data)[0] = 0xaabb1234ffff5678;
+
+    // Send the packet
+    llnet_connection_send(worker1, np_UDP, pckt2);
+
+    // TODO debug
+
+    // TODO compare
+
+    // Give back some resources
+    llnet_packet_free(pckt2);
+
+    msleep(10);
+
     // Clean up network resources
     llnet_connection_free((NetConnection_t*) worker1);
     llnet_connection_free((NetConnection_t*) accepter);

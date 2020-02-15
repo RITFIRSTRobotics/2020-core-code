@@ -29,7 +29,7 @@ $(OBJ_DIR)/netutils.o: netutils.c netutils.h
 
 $(TEST_OBJ_DIR)/test-llnet.o: $(TEST_DIR)/test-llnet.c $(TEST_DIR)/test-utils.h
 	@mkdir -p $(TEST_OBJ_DIR)
-	$(CC) $(TESTFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 test-llnet: $(OBJ_DIR)/lowlevel.o $(TEST_OBJ_DIR)/test-llnet.o $(OBJ_DIR)/arraylist.o
 	$(CC) -o $(TEST_OBJ_DIR)/test-llnet $^ $(LD_FLAGS)
