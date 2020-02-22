@@ -19,7 +19,7 @@ static PacketType_t PTYPES[NUM_PACKET_TYPES] = {
     pt_DEBUG
 };
 
-// Key type = PacketType_t, Value type = Queue_t* <PacketTLV*>
+// Key type = PacketType_t, Value type = Queue_t* <PTLVData_Base*>
 static HashTable_t buckets = NULL;
 
 static uint32_t hash_PacketType(void* pt)
@@ -71,4 +71,31 @@ int mh_init()
     }
     //Warning or success
     return rval;
+}
+
+void sort_packet(IntermediateTLV_t* packet)
+{
+    switch(packet->type)
+    {
+        case pt_INIT:
+            break;
+        case pt_STATE_REQUEST:
+            break;
+        case pt_STATE_RESPONSE:
+            break;
+        case pt_STATE_UPDATE:
+            break;
+        case pt_CONFIG_REQUEST:
+            break;
+        case pt_CONFIG_RESPONSE:
+            break;
+        case pt_CONFIG_UPDATE:
+            break;
+        case pt_USER_DATA:
+            break;
+        case pt_UPDATE_STATUS:
+            break;
+        case pt_DEBUG:
+            break;
+    }
 }
