@@ -1,11 +1,6 @@
 //
 // Created by Alex Kneipp (@ahkneipp) on 1/26/20.
 //
-
-#ifndef _LOCAL_HEADER
-    #error "This code should not be run outside of testing!\n"
-#endif
-
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -22,7 +17,7 @@
 
 static uint32_t hash(void* uint)
 {
-    return (uint32_t)(uint);
+    return (uint32_t)((uintptr_t) uint);
 }
 
 static int key_equals(void* a, void* b)
@@ -111,7 +106,7 @@ int t05_putGetInitialSizeNoRehash()
         if(ht_result!= (void*)i)
         {
             result += TEST_FAILURE;
-            printf("%d:%d\n",(int)ht_result, (int)(i));
+            printf("%d:%d\n",(int)(intptr_t)ht_result, (int)(i));
         }
     }
     hashtable_destroy(ht);
@@ -135,7 +130,7 @@ int t06_putGetWithDefault()
         if(ht_result!= (void*)i)
         {
             result += TEST_FAILURE;
-            printf("%d:%d\n",(int)ht_result, (int)(i));
+            printf("%d:%d\n",(int)(intptr_t)ht_result, (int)(i));
         }
     }
     void* defaultget = hashtable_getWithDefault(ht, (void*) MAX_TEST_SIZE + 1, NULL);
@@ -184,7 +179,7 @@ int t08_remove()
         if(ht_result!= (void*)i)
         {
             result += TEST_FAILURE;
-            printf("%d:%d\n",(int)ht_result, (int)(i));
+            printf("%d:%d\n",(int)(intptr_t)ht_result, (int)(i));
         }
         ht_result = hashtable_get(ht, (void*)i);
         if(ht_result != NULL)
@@ -210,7 +205,7 @@ int t09_removeIfValue()
     //NULL (=0) is not allowed as a key
     for(unsigned long i = 1; i<MAX_TEST_SIZE; i++)
     {
-        void* ht_result = hashtable_removeIfValue(ht, (void*)i, i+1);
+        void* ht_result = hashtable_removeIfValue(ht, (void*)i, (void *)(uintptr_t)(i+1));
         if(ht_result!= NULL)
         {
             result += TEST_FAILURE;
@@ -224,11 +219,11 @@ int t09_removeIfValue()
     }
     for(unsigned long i = 1; i<MAX_TEST_SIZE; i++)
     {
-        void* ht_result = hashtable_removeIfValue(ht, (void*)i, i);
+        void* ht_result = hashtable_removeIfValue(ht, (void*)i, (void *)(uintptr_t)i);
         if(ht_result!= (void*)i)
         {
             result += TEST_FAILURE;
-            printf("%d:%d\n",(int)ht_result, (int)(i));
+            printf("%d:%d\n",(int)(intptr_t)ht_result, (int)(i));
         }
         ht_result = hashtable_get(ht, (void*)i);
         if(ht_result != NULL)
@@ -254,8 +249,8 @@ int t10_replace()
     //NULL (=0) is not allowed as a key
     for(unsigned long i = 1; i<MAX_TEST_SIZE; i++)
     {
-        void* ht_result = hashtable_replace(ht, (void*)i, i+1);
-        if(ht_result != i)
+        void* ht_result = hashtable_replace(ht, (void*)i, (void *)(uintptr_t)(i+1));
+        if(ht_result != (void *)(uintptr_t)i)
         {
             result += TEST_FAILURE;
         }
@@ -283,7 +278,7 @@ int t11_replaceIfValue()
     //NULL (=0) is not allowed as a key
     for(unsigned long i = 1; i<MAX_TEST_SIZE; i++)
     {
-        void* ht_result = hashtable_replaceIfValue(ht, (void*)i, i+1, i+2);
+        void* ht_result = hashtable_replaceIfValue(ht, (void*)i, (void *)(uintptr_t)(i+1), (void *)(uintptr_t)(i+2));
         if(ht_result!= NULL)
         {
             result += TEST_FAILURE;
@@ -297,11 +292,11 @@ int t11_replaceIfValue()
     }
     for(unsigned long i = 1; i<MAX_TEST_SIZE; i++)
     {
-        void* ht_result = hashtable_replaceIfValue(ht, (void*)i, i, i+1);
+        void* ht_result = hashtable_replaceIfValue(ht, (void*)i, (void *)(uintptr_t)i, (void *)(uintptr_t)(i+1));
         if(ht_result!= (void*)(i))
         {
             result += TEST_FAILURE;
-            printf("%d:%d\n",(int)ht_result, (int)(i));
+            printf("%d:%d\n",(int)(intptr_t)ht_result, (int)(intptr_t)(i));
         }
         ht_result = hashtable_get(ht, (void*)i);
         if(ht_result != (void*)(i+1))
@@ -390,7 +385,7 @@ int t14_checkKeysList()
     for(unsigned long i = 1; i < MAX_TEST_SIZE; i++)
     {
         testvals[i - 1] =(void*) i;
-        hashtable_put(ht, i, i);
+        hashtable_put(ht, (void *)(uintptr_t)i, (void *)(uintptr_t)i);
     }
     List_t* keys = hashtable_getKeys(ht);
     if(keys == NULL)

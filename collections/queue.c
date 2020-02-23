@@ -6,6 +6,7 @@
  * @author Connor Henley, @thatging3rkid
  */
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "queue.h"
 #include "linkedlist.h"
@@ -14,7 +15,26 @@
  * @inherit
  */
 Queue_t* queue_init() {
-    return (Queue_t*) linkedlist_init();
+    // Use the linked list initializer, but realloc
+    Queue_t* queue = (Queue_t*) linkedlist_init();
+    /*
+    if (queue == NULL) {
+        return NULL;
+    } else if (queue->err != LIST_OKAY || queue->impl != LIST_LINKED) {
+        queue->impl = LIST_INVALID_IMPL;
+        return queue;
+    }
+
+    // Increase the memory space
+    Queue_t* temp = realloc(queue, sizeof(Queue_t));
+    if (temp == NULL) {
+        queue->err = LIST_MEMORY;
+        return queue;
+    }
+
+    // TODO setup condition variable
+    */
+    return queue;
 }
 
 /**
@@ -50,6 +70,13 @@ void* queue_peek_pos(Queue_t* queue, uint32_t pos) {
  */
 uint32_t queue_size(Queue_t* queue) {
     return linkedlist_size((LinkedList_t*) queue);
+}
+
+/**
+ * @inherit
+ */
+void queue_block(Queue_t* queue) {
+    
 }
 
 /**

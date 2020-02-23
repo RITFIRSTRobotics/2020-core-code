@@ -25,6 +25,7 @@ typedef struct LinkedListNode {
 } LinkedListNode_t;
 
 // Linked list structure "extends" List_t
+#pragma pack(push, 1) // disable struct packing
 typedef struct LinkedList {
     // "inherited"
     enum ListImplementation impl;
@@ -35,6 +36,7 @@ typedef struct LinkedList {
     struct LinkedListNode* first;
     struct LinkedListNode* last;
 } LinkedList_t;
+#pragma pack(pop) // return struct packing
 
 /**
  * Initialize an linked list with the default list length

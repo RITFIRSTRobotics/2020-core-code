@@ -5,10 +5,6 @@
  *
  * @author Connor Henley, @thatging3rkid
  */
-#ifndef _LOCAL_HEADER
-    #error "This code should not be run outside of testing\n"
-#endif
-
 #define _DEFAULT_SOURCE
 #include <stdio.h>
 #include <stdint.h>
