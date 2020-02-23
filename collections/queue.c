@@ -17,7 +17,6 @@
 Queue_t* queue_init() {
     // Use the linked list initializer, but realloc
     Queue_t* queue = (Queue_t*) linkedlist_init();
-    /*
     if (queue == NULL) {
         return NULL;
     } else if (queue->err != LIST_OKAY || queue->impl != LIST_LINKED) {
@@ -31,9 +30,10 @@ Queue_t* queue_init() {
         queue->err = LIST_MEMORY;
         return queue;
     }
+    queue = temp;
 
     // TODO setup condition variable
-    */
+
     return queue;
 }
 
