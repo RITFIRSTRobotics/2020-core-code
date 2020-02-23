@@ -32,7 +32,8 @@ Queue_t* queue_init() {
     }
     queue = temp;
 
-    // TODO setup condition variable
+    // Setup the condition variable
+    pthread_cond_init(&queue->condition, NULL);
 
     return queue;
 }
@@ -41,7 +42,10 @@ Queue_t* queue_init() {
  * @inherit
  */
 ListError_t queue_enqueue(Queue_t* queue, void* element) {
-    return linkedlist_add_front((LinkedList_t*) queue, element);
+    // Insert data, notify threads of new data, and return
+    ListError_t err = linkedlist_add_front((LinkedList_t*) queue, element);
+    pthread_cond_signal(&queue->condition);
+    return err;
 }
 
 /**
@@ -76,12 +80,18 @@ uint32_t queue_size(Queue_t* queue) {
  * @inherit
  */
 void queue_block(Queue_t* queue) {
-    
+    // Wait for something to be entered into the queue
+    pthread_mutex_lock(&queue->mutex);
+    while (queue_peek(queue) == NULL) {
+        pthread_cond_wait(&queue->condition, &queue->mutex);
+    }
+    pthread_mutex_unlock(&queue->mutex);
 }
 
 /**
  * @inherit
  */
 void queue_free(Queue_t* queue) {
+    pthread_cond_destroy(&queue->condition);
     linkedlist_free((LinkedList_t*) queue);
 }
