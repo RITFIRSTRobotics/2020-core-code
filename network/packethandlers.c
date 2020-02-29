@@ -2,10 +2,13 @@
 // Created by Alex Kneipp on 2/15/20.
 //
 
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
 #include "packethandlers.h"
 #include "../collections/arraylist.h"
 
-static PacketTLV_t createBasePacket(IntermediateTLV_t* rawPacket)
+static PacketTLV_t* createBasePacket(IntermediateTLV_t* rawPacket)
 {
     //Allocate memory for the packet and check for success
     PacketTLV_t* packet = malloc(sizeof(PacketTLV_t));
@@ -25,8 +28,8 @@ static PacketTLV_t createBasePacket(IntermediateTLV_t* rawPacket)
 
 PacketTLV_t* unpackInit(IntermediateTLV_t* rawPacket)
 {
-    PacketTLV_t* pack = createBasePacket(rawPacket);
-    if (pack == NULL)
+    PacketTLV_t* packet = createBasePacket(rawPacket);
+    if (packet == NULL)
     {
         //Free the raw packet
         llnet_packet_free(rawPacket);
@@ -50,13 +53,13 @@ PacketTLV_t* unpackInit(IntermediateTLV_t* rawPacket)
     packet->data = (PTLVData_Base_t*)unpacked;
     //We own the packet memory, free it
     llnet_packet_free(rawPacket);
-    return packet
+    return packet;
 }
 
 PacketTLV_t* unpackStateRequest(IntermediateTLV_t* rawPacket)
 {
-    PacketTLV_t* pack = createBasePacket(rawPacket);
-    if (pack == NULL)
+    PacketTLV_t* packet = createBasePacket(rawPacket);
+    if (packet == NULL)
     {
         //Free the raw packet
         llnet_packet_free(rawPacket);
@@ -65,7 +68,7 @@ PacketTLV_t* unpackStateRequest(IntermediateTLV_t* rawPacket)
 
     //Allocate empty memory. Note, size may be zero since this is an empty struct, so errno is checked
     //to confirm whether or not an error has occured
-    errno = 0
+    errno = 0;
     PTLVData_STATE_REQUEST_t* unpacked = calloc(1,sizeof(PTLVData_STATE_REQUEST_t));
     //Allocation failed
     if(unpacked == NULL && errno != 0)
@@ -81,20 +84,20 @@ PacketTLV_t* unpackStateRequest(IntermediateTLV_t* rawPacket)
     packet->data = (PTLVData_Base_t*)unpacked;
     //We own the packet memory, free it
     llnet_packet_free(rawPacket);
-    return packet
+    return packet;
 }
 
 PacketTLV_t* unpackStateResponse(IntermediateTLV_t* rawPacket)
 {
-    PacketTLV_t* pack = createBasePacket(rawPacket);
-    if (pack == NULL)
+    PacketTLV_t* packet = createBasePacket(rawPacket);
+    if (packet == NULL)
     {
         //Free the raw packet
         llnet_packet_free(rawPacket);
         return NULL;
     }
 
-    errno = 0
+    errno = 0;
     PTLVData_STATE_RESPONSE_t* unpacked = calloc(1,sizeof(PTLVData_STATE_RESPONSE_t));
     //Allocation failed
     if(unpacked == NULL && errno != 0)
@@ -129,20 +132,20 @@ PacketTLV_t* unpackStateResponse(IntermediateTLV_t* rawPacket)
     packet->data = (PTLVData_Base_t*)unpacked;
     //We own the packet memory, free it
     llnet_packet_free(rawPacket);
-    return packet
+    return packet;
 }
 
 PacketTLV_t* unpackStateUpdate(IntermediateTLV_t* rawPacket)
 {
-    PacketTLV_t* pack = createBasePacket(rawPacket);
-    if (pack == NULL)
+    PacketTLV_t* packet = createBasePacket(rawPacket);
+    if (packet == NULL)
     {
         //Free the raw packet
         llnet_packet_free(rawPacket);
         return NULL;
     }
 
-    errno = 0
+    errno = 0;
     PTLVData_STATE_UPDATE_t* unpacked = calloc(1,sizeof(PTLVData_STATE_UPDATE_t));
     //Allocation failed
     if(unpacked == NULL && errno != 0)
@@ -154,7 +157,7 @@ PacketTLV_t* unpackStateUpdate(IntermediateTLV_t* rawPacket)
         return NULL;
     }
     //Byte one is the state
-    unpacked->state = (RobotState_t)rawPacket->data[0];
+    unpacked->new_state = (RobotState_t)rawPacket->data[0];
     //The reserved isn't currently used, but we can use it in the future, so unpack it
     unpacked->reserved = (uint32_t)(rawPacket->data[1]) << 16 |
                          (uint32_t)(rawPacket->data[2]) << 8 | rawPacket->data[3];
@@ -177,20 +180,20 @@ PacketTLV_t* unpackStateUpdate(IntermediateTLV_t* rawPacket)
     packet->data = (PTLVData_Base_t*)unpacked;
     //We own the packet memory, free it
     llnet_packet_free(rawPacket);
-    return packet
+    return packet;
 }
 
 PacketTLV_t* unpackConfigRequest(IntermediateTLV_t* rawPacket)
 {
-    PacketTLV_t* pack = createBasePacket(rawPacket);
-    if (pack == NULL)
+    PacketTLV_t* packet = createBasePacket(rawPacket);
+    if (packet == NULL)
     {
         //Free the raw packet
         llnet_packet_free(rawPacket);
         return NULL;
     }
 
-    errno = 0
+    errno = 0;
     PTLVData_CONFIG_REQUEST_t* unpacked = calloc(1,sizeof(PTLVData_CONFIG_REQUEST_t));
     //Allocation failed
     if(unpacked == NULL && errno != 0)
@@ -201,10 +204,10 @@ PacketTLV_t* unpackConfigRequest(IntermediateTLV_t* rawPacket)
         llnet_packet_free(rawPacket);
         return NULL;
     }
-    pack->type = rawPacket->type;
-    pack->timestamp = rawPacket->timestamp;
-    pack->length = rawPacket->length;
-    pack->data = unpacked;
+    packet->type = rawPacket->type;
+    packet->timestamp = rawPacket->timestamp;
+    packet->length = rawPacket->length;
+    packet->data = unpacked;
 
     //TODO get the rest of the data
 }
@@ -221,15 +224,15 @@ PacketTLV_t* unpackConfigUpdate(IntermediateTLV_t* rawPacket)
 
 PacketTLV_t* unpackUserData(IntermediateTLV_t* rawPacket)
 {
-    PacketTLV_t* pack = createBasePacket(rawPacket);
-    if (pack == NULL)
+    PacketTLV_t* packet = createBasePacket(rawPacket);
+    if (packet == NULL)
     {
         //Free the raw packet
         llnet_packet_free(rawPacket);
         return NULL;
     }
 
-    errno = 0
+    errno = 0;
     PTLVData_USER_DATA_t* unpacked = calloc(1,sizeof(PTLVData_USER_DATA_t));
     //Allocation failed
     if(unpacked == NULL && errno != 0)
@@ -241,10 +244,10 @@ PacketTLV_t* unpackUserData(IntermediateTLV_t* rawPacket)
         return NULL;
     }
 
-    pack->type = rawPacket->type;
-    pack->timestamp = rawPacket->timestamp;
-    pack->length = rawPacket->length;
-    pack->data = unpacked;
+    packet->type = rawPacket->type;
+    packet->timestamp = rawPacket->timestamp;
+    packet->length = rawPacket->length;
+    packet->data = unpacked;
 
     unpacked->left_stick_x = rawPacket->data[0];
     unpacked->left_stick_y = rawPacket->data[1];
@@ -252,10 +255,10 @@ PacketTLV_t* unpackUserData(IntermediateTLV_t* rawPacket)
     unpacked->right_stick_y = rawPacket->data[3];
     unpacked->button_a = (rawPacket->data[4] & 0x80) != 0;
     unpacked->button_b = (rawPacket->data[4] & 0x40) != 0;
-    unpacked->controller_uuid = (rawPacket[6] << 8) & rawPacket[7];
+    unpacked->controller_uuid = (rawPacket->data[6] << 8) & rawPacket->data[7];
 
     llnet_packet_free(rawPacket);
-    return pack;
+    return packet;
 }
 
 PacketTLV_t* unpackDebug(IntermediateTLV_t* rawPacket)
