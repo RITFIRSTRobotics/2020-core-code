@@ -255,7 +255,7 @@ PacketTLV_t* unpackUserData(IntermediateTLV_t* rawPacket)
     unpacked->right_stick_y = rawPacket->data[3];
     unpacked->button_a = (rawPacket->data[4] & 0x80) != 0;
     unpacked->button_b = (rawPacket->data[4] & 0x40) != 0;
-    unpacked->controller_uuid = (rawPacket->data[6] << 8) & rawPacket->data[7];
+    unpacked->controller_uuid = (((uint16_t)(rawPacket->data[6])) << 8) | rawPacket->data[7];
 
     llnet_packet_free(rawPacket);
     return packet;
