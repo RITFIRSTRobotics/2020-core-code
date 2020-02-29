@@ -45,6 +45,7 @@ typedef enum ConnectionState {
 // Defines a structure to store a minimally decoded packet
 typedef struct IntermediateTLV {
     uint32_t type:8;
+    //Only the length of the data, not the entire packet
     uint32_t length:24;
     uint32_t timestamp;
     uint8_t* data;
