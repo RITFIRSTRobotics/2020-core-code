@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include "../network/packethandlers.h"
 #include "../network/packet.h"
 #include "../network/lowlevel.h"
@@ -28,7 +29,8 @@ void setup()
     userDataPacket = malloc(sizeof(IntermediateTLV_t));
     userDataPacket->type = pt_USER_DATA;
     userDataPacket->length = 8;
-    userDataPacket->data = USER_DATA_DATA;
+    userDataPacket->data = malloc(sizeof(USER_DATA_DATA));
+    memcpy(userDataPacket->data, USER_DATA_DATA, sizeof(USER_DATA_DATA));
     userDataPacket->timestamp = 0xAAAAAAAA;
 }
 
@@ -37,62 +39,64 @@ int t01_testUserDataUnpacking() {
     int errCount = 0;
     PacketTLV_t *unpackedPacket = unpackUserData(userDataPacket);
     if (unpackedPacket == NULL) {
-        dbg_error("unpackUserData returned NULL!")
+        dbg_error("unpackUserData returned NULL!\n")
         errCount++;
     }
 
     if (unpackedPacket->type != pt_USER_DATA) {
-        dbg_error("unpackUserData returned incorrect packetType!");
+        dbg_error("unpackUserData returned incorrect packetType!\n");
         errCount++;
     }
 
     if (unpackedPacket->timestamp != 0xAAAAAAAA) {
-        dbg_error("unpackUserData returned incorrect timestamp!");
+        dbg_error("unpackUserData returned incorrect timestamp!\n");
         errCount++;
     }
 
     if (unpackedPacket->length != 8) {
-        dbg_error("unpackUserData returned incorrect length!");
+        dbg_error("unpackUserData returned incorrect length!\n");
         errCount++;
     }
 
     if (((PTLVData_USER_DATA_t *)(unpackedPacket->data))->left_stick_x != knownGoodUserData.left_stick_x)
     {
-        dbg_error("unpackUserData incorrectly unpacked the left stick x axis!");
+        dbg_error("unpackUserData incorrectly unpacked the left stick x axis!\n");
         errCount++;
     }
     if (((PTLVData_USER_DATA_t *) (unpackedPacket->data))->left_stick_y != knownGoodUserData.left_stick_y)
     {
-        dbg_error("unpackUserData incorrectly unpacked the left stick y axis!");
+        dbg_error("unpackUserData incorrectly unpacked the left stick y axis!\n");
         errCount++;
     }
     if (((PTLVData_USER_DATA_t *) (unpackedPacket->data))->right_stick_x != knownGoodUserData.right_stick_x)
     {
-        dbg_error("unpackUserData incorrectly unpacked the right stick x axis!");
+        dbg_error("unpackUserData incorrectly unpacked the right stick x axis!\n");
         errCount++;
     }
     if (((PTLVData_USER_DATA_t *) (unpackedPacket->data))->right_stick_y != knownGoodUserData.right_stick_y)
     {
-        dbg_error("unpackUserData incorrectly unpacked the right stick y axis!");
+        dbg_error("unpackUserData incorrectly unpacked the right stick y axis!\n");
         errCount++;
     }
 
     if (((PTLVData_USER_DATA_t *) (unpackedPacket->data))->button_a != knownGoodUserData.button_a)
     {
-        dbg_error("unpackUserData incorrectly unpacked button A!");
+        dbg_error("unpackUserData incorrectly unpacked button A!\n");
         errCount++;
     }
     if (((PTLVData_USER_DATA_t *) (unpackedPacket->data))->button_b != knownGoodUserData.button_b)
     {
-        dbg_error("unpackUserData incorrectly unpacked button B!");
+        dbg_error("unpackUserData incorrectly unpacked button B!\n");
         errCount++;
     }
 
     if (((PTLVData_USER_DATA_t *) (unpackedPacket->data))->controller_uuid != knownGoodUserData.controller_uuid)
     {
-        dbg_error("unpackUserData incorrectly unpacked controller UUID!");
+        fprintf(stderr,"Unpacked controller UUID: %hx\n", ((PTLVData_USER_DATA_t*)(unpackedPacket->data))->controller_uuid);
+        dbg_error("unpackUserData incorrectly unpacked controller UUID!\n");
         errCount++;
     }
+    free(unpackedPacket->data);
     free(unpackedPacket);
     return errCount;
 }
@@ -105,10 +109,10 @@ int main()
     printf("Starting Test01!\n");
     error = t01_testUserDataUnpacking();
     if(error == 0 ) {
-        dbg_info("success!\n");
+        printf("success!\n");
     }
     else {
-        dbg_info("^^^ test errors\n");
+        printf("^^^ test errors\n");
     }
     allErrors += error;
     // Tests finished, handle the error code
