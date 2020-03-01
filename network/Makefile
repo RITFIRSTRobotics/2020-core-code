@@ -39,7 +39,7 @@ $(TEST_OBJ_DIR)/test-packethandlers.o: $(TEST_DIR)/test-packethandlers.c
 	@mkdir -p $(TEST_OBJ_DIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-test-packethandlers: $(OBJ_DIR)/packethandlers.o $(TEST_OBJ_DIR)/test-packethandlers.o $(OBJ_DIR)/arraylist.o $(OBJ_DIR)/lowlevel.o
+test-packethandlers: $(OBJ_DIR)/packethandlers.o $(TEST_OBJ_DIR)/test-packethandlers.o $(OBJ_DIR)/arraylist.o $(OBJ_DIR)/lowlevel.o $(OBJ_DIR)/list.o $(OBJ_DIR)/linkedlist.o
 	$(CC) -o $(TEST_OBJ_DIR)/$@ $^ $(LD_FLAGS)
 	@echo "!!!!!!!! starting testing"
 	@valgrind --leak-check=full --error-exitcode=1 --suppressions=llnet.valgrind.supp $(TEST_OBJ_DIR)/$@

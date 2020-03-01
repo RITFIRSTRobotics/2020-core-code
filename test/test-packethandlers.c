@@ -164,8 +164,7 @@ int t01_testUserDataUnpacking() {
         errCount++;
     }
     teardown(pt_USER_DATA);
-    free(unpackedPacket->data);
-    free(unpackedPacket);
+    destroyUserData(unpackedPacket);
     return errCount;
 }
 
@@ -233,9 +232,7 @@ int t02_testStateUpdateUnpacking()
         }
     }
     teardown(pt_STATE_UPDATE);
-    free(arbitraryData);
-    free(unpackedData);
-    free(unpackedPacket);
+    destroyStateUpdate(unpackedPacket);
     return errCount;
 }
 
