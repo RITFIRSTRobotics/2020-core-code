@@ -104,22 +104,8 @@ PacketTLV_t* unpackStateRequest(IntermediateTLV_t* rawPacket)
         return NULL;
     }
 
-    //Allocate empty memory. Note, size may be zero since this is an empty struct, so errno is checked
-    //to confirm whether or not an error has occured
-    errno = 0;
-    PTLVData_STATE_REQUEST_t* unpacked = calloc(1,sizeof(PTLVData_STATE_REQUEST_t));
-    //Allocation failed
-    if(unpacked == NULL && errno != 0)
-    {
-        //packet allocation succeeded, so free that memory
-        free(packet);
-        //Free the raw packet
-        llnet_packet_free(rawPacket);
-        return NULL;
-    }
-
-    //Dump it in the packet
-    packet->data = (PTLVData_Base_t*)unpacked;
+    //An empty struct has 0 size, so don't bother allocating memory for the data portion
+    packet->data = NULL;
     //We own the packet memory, free it
     llnet_packet_free(rawPacket);
     return packet;
