@@ -265,3 +265,82 @@ PacketTLV_t* unpackDebug(IntermediateTLV_t* rawPacket)
 {
 
 }
+
+void destroyInit(PacketTLV_t* initPacket)
+{
+    free(initPacket->data);
+    initPacket->data = NULL;
+    free(initPacket);
+}
+
+void destroyStateRequest(PacketTLV_t* stateRequestPacket)
+{
+    free(stateRequestPacket->data);
+    stateRequestPacket->data = NULL;
+    free(stateRequestPacket);
+}
+
+void destroyStateResponse(PacketTLV_t* stateResponsePacket)
+{
+    PTLVData_STATE_RESPONSE_t* data = (PTLVData_STATE_RESPONSE_t*)stateResponsePacket->data;
+    free(data->arbitrary);
+    data->arbitrary = NULL;
+    free(data);
+    data = NULL;
+    free(stateResponsePacket);
+}
+
+void destroyStateUpdate(PacketTLV_t* stateUpdatePacket)
+{
+    PTLVData_STATE_UPDATE_t* data = (PTLVData_STATE_UPDATE_t*)stateUpdatePacket->data;
+    free(data->arbitrary);
+    data->arbitrary = NULL;
+    free(data);
+    data = NULL;
+    free(stateUpdatePacket);
+}
+
+void destroyConfigRequest(PacketTLV_t* configRequestPacket)
+{
+    PTLVData_CONFIG_REQUEST_t* data = (PTLVData_CONFIG_REQUEST_t*)configRequestPacket->data;
+    list_free(data->keys);
+    data->keys = NULL;
+    free(data);
+    data = NULL;
+    free(configRequestPacket);
+}
+
+void destroyConfigResponse(PacketTLV_t* configResponsePacket)
+{
+    PTLVData_CONFIG_RESPONSE_t* data = (PTLVData_CONFIG_RESPONSE_t*)configResponsePacket->data;
+    list_free(data->pairs);
+    data->pairs = NULL;
+    free(data);
+    data = NULL;
+    free(configResponsePacket);
+}
+
+void destroyConfigUpdate(PacketTLV_t* configUpdatePacket)
+{
+    PTLVData_CONFIG_UPDATE_t* data = (PTLVData_CONFIG_UPDATE_t*)configUpdatePacket->data;
+    list_free(data->new_pairs);
+    data->new_pairs = NULL;
+    free(data);
+    data = NULL;
+    free(configUpdatePacket);
+}
+void destroyUserData(PacketTLV_t* userDataPacket)
+{
+    free(userDataPacket->data);
+    userDataPacket->data = NULL;
+    free(userDataPacket);
+}
+void destroyDebug(PacketTLV_t* debugPacket)
+{
+    PTLVDATA_DEBUG_t* debugData = (PTLVDATA_DEBUG_t*)(debugPacket->data);
+    free(debugData->arbitrary);
+    debugData->arbitrary = NULL;
+    free(debugData);
+    debugData = NULL;
+    free(debugPacket);
+}
