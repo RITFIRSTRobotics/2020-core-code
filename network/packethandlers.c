@@ -207,7 +207,7 @@ PacketTLV_t* unpackConfigRequest(IntermediateTLV_t* rawPacket)
     packet->type = rawPacket->type;
     packet->timestamp = rawPacket->timestamp;
     packet->length = rawPacket->length;
-    packet->data = unpacked;
+    packet->data = (PTLVData_Base_t*)unpacked;
 
     //TODO get the rest of the data
 }
@@ -247,7 +247,7 @@ PacketTLV_t* unpackUserData(IntermediateTLV_t* rawPacket)
     packet->type = rawPacket->type;
     packet->timestamp = rawPacket->timestamp;
     packet->length = rawPacket->length;
-    packet->data = unpacked;
+    packet->data = (PTLVData_Base_t*)unpacked;
 
     unpacked->left_stick_x = rawPacket->data[0];
     unpacked->left_stick_y = rawPacket->data[1];
