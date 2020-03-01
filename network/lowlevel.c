@@ -38,20 +38,11 @@
 // local things
 #include "lowlevel.h"
 #include "constants.h"
+#include "../utils/bounds.h"
 #include "../utils/dbgprint.h"
 #include "../collections/arraylist.h"
 
 #define _LLNET_UDP_BUFFER_LENGTH (65535)
-
-/**
- * Finds the minimum of the two values
- *
- * @macro
- * @param a the first value
- * @param b the second value
- * @note this does not prevent against double evaluation
- */
-#define min(a, b) (((a)<(b)) ? (a) : (b))
 
 static ArrayList_t* connections = NULL;
 static int32_t llnet_time_offset = 0; // this value is added on a send, subtracted on a recieve
@@ -253,7 +244,8 @@ static void* _llnet_listener_udp(void* _targs) {
 
         // Save the rest of the data
         tlv->data = malloc(tlv->length);
-        memcpy(tlv->data, (buf + LLNET_HEADER_LENGTH), min(tlv->length, nread - LLNET_HEADER_LENGTH));
+        uint32_t l = tlv->length; // trick gcc that this isn't a bit-field
+        memcpy(tlv->data, (buf + LLNET_HEADER_LENGTH), min(l, nread - LLNET_HEADER_LENGTH));
 
         // Call the handler
         worker->on_packet(worker->connection_id, tlv);
