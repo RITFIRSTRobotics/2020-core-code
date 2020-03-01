@@ -2,6 +2,13 @@
 // Created by Alex Kneipp on 2/15/20.
 //
 
+/**
+ * @file packethandlers.h
+ * Header file defining the functions used to unpack packets received from the low-level network interface.
+ * Note that these should not be called by user code.  This file is primarily meant as an aggregation of functions
+ * used by the messagehandler.
+ */
+
 #ifndef INC_2020_CORE_CODE_PACKETHANDLERS_H
 #define INC_2020_CORE_CODE_PACKETHANDLERS_H
 
@@ -42,6 +49,7 @@ PacketTLV_t* unpackStateRequest(IntermediateTLV_t* rawPacket);
  *  The arbitrary data field is always a pointer to memory, which the consumer should handle or ignore.
  */
 PacketTLV_t* unpackStateResponse(IntermediateTLV_t* rawPacket);
+
 /**
  * Handler function to unpack a STATE_UPDATE packet when received by the low-level network interface. This function
  * will always attempt to free \p rawPacket.
@@ -53,6 +61,7 @@ PacketTLV_t* unpackStateResponse(IntermediateTLV_t* rawPacket);
  *  The arbitrary data field is always a pointer to memory, which the consumer should handle or ignore.
  */
 PacketTLV_t* unpackStateUpdate(IntermediateTLV_t* rawPacket);
+
 /**
  * Handler function to unpack a CONFIG_REQUEST packet when received by the low-level network interface. This function
  * will always attempt to free \p rawPacket.
@@ -63,6 +72,7 @@ PacketTLV_t* unpackStateUpdate(IntermediateTLV_t* rawPacket);
  *  If the function fails (Usually during memory allocation) it returns NULL.
  */
 PacketTLV_t* unpackConfigRequest(IntermediateTLV_t* rawPacket);
+
 /**
  * Handler function to unpack a CONFIG_RESPONSE packet when received by the low-level network interface. This function
  * will always attempt to free \p rawPacket.
@@ -73,6 +83,7 @@ PacketTLV_t* unpackConfigRequest(IntermediateTLV_t* rawPacket);
  *  If the function fails (Usually during memory allocation) it returns NULL.
  */
 PacketTLV_t* unpackConfigResponse(IntermediateTLV_t* rawPacket);
+
 /**
  * Handler function to unpack a CONFIG_UPDATE packet when received by the low-level network interface. This function
  * will always attempt to free \p rawPacket.
@@ -83,6 +94,7 @@ PacketTLV_t* unpackConfigResponse(IntermediateTLV_t* rawPacket);
  *  If the function fails (Usually during memory allocation) it returns NULL.
  */
 PacketTLV_t* unpackConfigUpdate(IntermediateTLV_t* rawPacket);
+
 /**
  * Handler function to unpack a USER_DATA packet when received by the low-level network interface. This function
  * will always attempt to free \p rawPacket.
@@ -93,6 +105,7 @@ PacketTLV_t* unpackConfigUpdate(IntermediateTLV_t* rawPacket);
  *  If the function fails (Usually during memory allocation) it returns NULL.
  */
 PacketTLV_t* unpackUserData(IntermediateTLV_t* rawPacket);
+
 /**
  * Handler function to unpack a DEBUG packet when received by the low-level network interface. This function
  * will always attempt to free \p rawPacket.
@@ -105,6 +118,7 @@ PacketTLV_t* unpackUserData(IntermediateTLV_t* rawPacket);
  *  necessary.
  */
 PacketTLV_t* unpackDebug(IntermediateTLV_t* rawPacket);
+
 
 /**
  * Cleans up an INIT packet.
@@ -119,42 +133,49 @@ void destroyInit(PacketTLV_t* initPacket);
  *  A packet returned by unpackStateRequest()
  */
 void destroyStateRequest(PacketTLV_t* stateRequestPacket);
+
 /**
  * Cleans up a STATE_RESPONSE packet.
  * @param stateResponsePacket
  *  A packet returned by unpackStateResponse()
  */
 void destroyStateResponse(PacketTLV_t* stateResponsePacket);
+
 /**
  * Cleans up a STATE_UPDATE packet
  * @param stateUpdatePacket
  *  A packet returned by unpackStateUpdate()
  */
 void destroyStateUpdate(PacketTLV_t* stateUpdatePacket);
+
 /**
  * Cleans up a CONFIG_REQUEST packet.
  * @param configRequestPacket
  *  A packet returned by unpackConfigRequest()
  */
 void destroyConfigRequest(PacketTLV_t* configRequestPacket);
+
 /**
  * Cleans up a CONFIG_RESPONSE packet.
  * @param configResponsePacket
  *  A packet returned by unpackConfigResponse()
  */
 void destroyConfigResponse(PacketTLV_t* configResponsePacket);
+
 /**
  * Cleans up a CONFIG_UPDATE packet.
  * @param configUpdatePacket
  *  A packet returned by unpackConfigUpdate()
  */
 void destroyConfigUpdate(PacketTLV_t* configUpdatePacket);
+
 /**
  * Cleans up a USER_DATA packet.
  * @param userDataPacket
  *  A packet returned by unpackUserData()
  */
 void destroyUserData(PacketTLV_t* userDataPacket);
+
 /**
  * Cleans up a DEBUG packet.
  * @param debugPacket
