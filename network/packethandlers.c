@@ -28,7 +28,6 @@ static PacketTLV_t* createBasePacket(IntermediateTLV_t* rawPacket)
 
 static List_t* parseKVList(char* rawList, size_t kvListLen)
 {
-    //TODO make sure we quit gracefully in the case of padding
     ArrayList_t* kvList = arraylist_init();
     if(kvList == NULL)
     {
@@ -39,31 +38,55 @@ static List_t* parseKVList(char* rawList, size_t kvListLen)
     while(kvString < (rawList + kvListLen))
     {
         //Get the length of the key
-        //TODO check to make sure keyLen > 0
         size_t keyLen = strlen(kvString);
+        //We've found a nul byte at the beginning of a string for some reason, probably because of padding
+        //Check the next byte until we hit the end of the raw buffer
+        if(keyLen == 0)
+        {
+            kvString++;
+            continue;
+        }
         //Copy the key into memory we control
-        //TODO check for failure
         char* key = malloc(sizeof(char) * (keyLen + 1));
-        //TODO you can probably save time here by using strcpy since we're dynamically allocating memory according to
-        //string size
-        strncpy(key, kvString, keyLen+1);
+        if(key != NULL)
+        {
+            //memcpy for speed, since we already know string size
+            memcpy(key, kvString, keyLen+1);
+            //Force nul termination
+            key[keyLen] = '\0';
+        }
         //The type is the first byte after the nul terminator
         KVPair_Type_t type = kvString[keyLen + 1];
         //The length is in the next 3 bytes
         size_t valueLength = kvString[keyLen+2] << 16 | kvString[keyLen+3] << 8 | kvString[keyLen+4];
         //Copy the value into memory we control
-        //TODO check for failure
         void* value = malloc(valueLength);
-        memcpy(value, kvString + keyLen + 5, valueLength);
+        if(value != NULL)
+        {
+            memcpy(value, kvString + keyLen + 5, valueLength);
+        }
         //Store the K-TLV structure
-        //TODO check for failure
         KVPairTLV_t* thisPair = malloc(sizeof(KVPairTLV_t));
-        thisPair->key = key;
-        thisPair->type = type;
-        thisPair->length = valueLength;
-        thisPair->value = value;
-        //Add the structure to the list
-        arraylist_add(kvList, thisPair);
+        if(thisPair != NULL && value != NULL && key != NULL)
+        {
+            thisPair->key = key;
+            thisPair->type = type;
+            thisPair->length = valueLength;
+            thisPair->value = value;
+            //Add the structure to the list
+            arraylist_add(kvList, thisPair);
+        }
+        //There was a failure somewhere
+        else
+        {
+            //Clean up the memory we have successfully allocated
+            if(thisPair)
+                free(thisPair);
+            if(value)
+                free(value);
+            if(key)
+                free(key);
+        }
         //Increment the pointer to the next K-TLV
         //the length of the key + nul terminator + type + length + value + semicolon
         kvString +=keyLen+1+1+3+valueLength+1;
