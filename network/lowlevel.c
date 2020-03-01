@@ -105,8 +105,8 @@ static void* _llnet_pckt_send(void* _targs) {
         err = write(targs->connection->tcp_fd, buf, buf_len);
     } else if (targs->proto == np_UDP) {
         // Send the data using UDP
-        err = sendto(targs->connection->udp_fd, buf, buf_len, MSG_CONFIRM, (const struct sockaddr*) &targs->connection->other_addr,
-            targs->connection->other_addr_len);
+        err = sendto(targs->connection->udp_fd, buf, buf_len, 0,
+            (struct sockaddr*) &targs->connection->other_addr, sizeof(struct sockaddr_in));
     }
 
     // Store the error
@@ -292,6 +292,16 @@ static void* _llnet_accepter_thread(void* _targs) {
             exit(EXIT_FAILURE); // for now, exit on error
         }
 
+        // Set the SO_REUSEADDR and SO_REUSEPORT flags (because resource leaks *will* happen)
+        int opt_value = 1;
+        int err = setsockopt(worker->udp_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt_value, sizeof(int));
+        if (err < 0) {
+            dbg_error("could not set socket options: %s\n", strerror(errno));
+            close(worker->udp_fd);
+            free(worker);
+            exit(EXIT_FAILURE);
+        }
+
         // Fill in everything else
         worker->on_packet = accepter->on_packet;
         worker->tcp_status = ls_NOT_STARTED;
@@ -299,13 +309,12 @@ static void* _llnet_accepter_thread(void* _targs) {
 
         // Get the connection_id lock, save it's value, increment, and return the lock
         pthread_mutex_lock(&next_connection_id_mutex);
-        dbg_info("next_id=%u\n", next_connection_id);
         worker->connection_id = next_connection_id;
         next_connection_id += 1;
         pthread_mutex_unlock(&next_connection_id_mutex);
 
         // Accept the connection
-        worker->other_addr_len = 0;
+        worker->other_addr_len = sizeof(struct sockaddr_in);
         worker->tcp_fd = accept(accepter->tcp_fd, (struct sockaddr*) &worker->other_addr, &worker->other_addr_len);
 
         // Handle error: unexpected error
@@ -316,13 +325,23 @@ static void* _llnet_accepter_thread(void* _targs) {
             continue;
         }
 
+        // Bind the UDP socket so that the OS knows to give us data
+        err = bind(worker->udp_fd, (struct sockaddr*) &worker->other_addr, sizeof(struct sockaddr_in));
+        if (err < 0) {
+            dbg_warning("bind failed: %s\n", strerror(errno));
+            close(worker->udp_fd);
+            free(worker);
+            continue;
+        }
+
+        // Oficially a complete worker
+        worker->state = cs_WORKER;
+
         // Notify the handler that we got one
         if (accepter->on_connect != NULL) {
             accepter->on_connect(worker);
         }
         arraylist_add(connections, worker);
-
-        worker->state = cs_WORKER;
 
         // Start listener threads
         pthread_create(&worker->tcp_thread, NULL, &_llnet_listener_tcp, (void*) worker);
@@ -376,6 +395,16 @@ NetConnection_t* llnet_connection_init() {
         exit(EXIT_FAILURE); // for now, exit on error
     }
 
+    // Set the SO_REUSEADDR and SO_REUSEPORT flags (because resource leaks *will* happen)
+    err = setsockopt(connection->udp_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt_value, sizeof(int));
+    if (err < 0) {
+        dbg_error("could not set socket options: %s\n", strerror(errno));
+        close(connection->tcp_fd);
+        close(connection->udp_fd);
+        free(connection);
+        exit(EXIT_FAILURE);
+    }
+
     // all finished
     return connection;    
 }
@@ -419,7 +448,7 @@ WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection, char* 
 
     worker->on_packet = handler;
     memset(&worker->other_addr, 0, sizeof(struct sockaddr_in));
-    worker->other_addr_len = 0;
+    worker->other_addr_len = sizeof(struct sockaddr_in);
 
     // Add this connection to the list
     if (connections == NULL) {
@@ -429,7 +458,6 @@ WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection, char* 
 
     // Get the connection_id lock, save it's value, increment, and return the lock
     pthread_mutex_lock(&next_connection_id_mutex);
-        dbg_info("next_id=%u\n", next_connection_id);
     worker->connection_id = next_connection_id;
     next_connection_id += 1;
     pthread_mutex_unlock(&next_connection_id_mutex);
@@ -452,6 +480,7 @@ WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection, char* 
 #endif
 
     // Setup the server address
+    worker->other_addr_len = sizeof(worker->other_addr);
     worker->other_addr.sin_family = AF_INET;
     worker->other_addr.sin_port = htons(PORT_NUMBER);
     worker->other_addr.sin_addr = *((struct in_addr*) host_addr->h_addr_list[0]);
@@ -460,6 +489,13 @@ WorkerConnection_t* llnet_connection_connect(NetConnection_t* connection, char* 
     int err = connect(worker->tcp_fd, (struct sockaddr*) &worker->other_addr, sizeof(struct sockaddr_in));
     if (err < 0) {
         dbg_warning("connect failed: %s\n", strerror(errno));
+        return worker;
+    }
+
+    // Bind the UDP socket so that the OS knows to give us data
+    err = bind(worker->udp_fd, (struct sockaddr*) &worker->other_addr, sizeof(struct sockaddr_in));
+    if (err < 0) {
+        dbg_warning("bind failed: %s\n", strerror(errno));
         return worker;
     }
 

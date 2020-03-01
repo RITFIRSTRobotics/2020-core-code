@@ -20,6 +20,8 @@
 #define DEBUG true
 
 #define T02_PCKT_LENGTH (8)
+#define NUMBER_OF_POLLS (16)
+#define POLL_SLEEP_TIME (100)
 
 static ArrayList_t* t02_connections = NULL;
 static ArrayList_t* t02_svr_pckts = NULL;
@@ -237,8 +239,30 @@ int t02_send_data() {
     // Send the packet
     llnet_connection_send(worker1, np_UDP, pckt3);
 
-    // TODO debug
+    // Wait for the packet to be recieved by the server
+    received = false;
+    for (size_t i = 0; i < 10; i += 1) {
+        size = arraylist_size(t02_clnt_pckts);
 
+        // See if we got it
+        if (size == 1) {
+            received = true;
+            break;
+        } else {
+            usleep(500); // wait before polling again
+        }
+    }
+
+    // Return failure if we did not get the packet after 10 tries
+    if (!received) {
+        dbg_error("no packet received (length = %u)\n", size);
+        llnet_connection_free((NetConnection_t*) worker1);
+        llnet_connection_free((NetConnection_t*) accepter);
+        return TEST_FAILURE;
+    }
+
+    
+    
     // TODO compare
 
     // Give back some resources
