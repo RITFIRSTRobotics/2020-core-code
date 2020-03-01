@@ -26,6 +26,44 @@ static PacketTLV_t* createBasePacket(IntermediateTLV_t* rawPacket)
     return packet;
 }
 
+static List_t* parseKVList(char* rawList, size_t kvListLen)
+{
+    ArrayList_t* kvList = arraylist_init();
+    if(kvList == NULL)
+    {
+        return NULL;
+    }
+    char* kvString = rawList;
+    //While we haven't hit the end of the list
+    while(kvString < (rawList + kvListLen))
+    {
+        //Get the length of the key
+        size_t keyLen = strlen(kvString);
+        //Copy the key into memory we control
+        char* key = malloc(sizeof(char) * (keyLen + 1));
+        strncpy(key, kvString, keyLen+1);
+        //The type is the first byte after the nul terminator
+        KVPair_Type_t type = kvString[keyLen + 1];
+        //The length is in the next 3 bytes
+        size_t valueLength = kvString[keyLen+2] << 16 | kvString[keyLen+3] << 8 | kvString[keyLen+4];
+        //Copy the value into memory we control
+        void* value = malloc(valueLength);
+        memcpy(value, kvString + keyLen + 5, valueLength);
+        //Store the K-TLV structure
+        KVPairTLV_t* thisPair = malloc(sizeof(KVPairTLV_t));
+        thisPair->key = key;
+        thisPair->type = type;
+        thisPair->length = valueLength;
+        thisPair->value = value;
+        //Add the structure to the list
+        arraylist_add(kvList, thisPair);
+        //Increment the pointer to the next K-TLV
+        //the length of the key + nul terminator + type + length + value + semicolon
+        kvString +=keyLen+1+1+3+valueLength+1;
+    }
+    return (List_t*)kvList;
+}
+
 PacketTLV_t* unpackInit(IntermediateTLV_t* rawPacket)
 {
     PacketTLV_t* packet = createBasePacket(rawPacket);
@@ -219,7 +257,35 @@ PacketTLV_t* unpackConfigResponse(IntermediateTLV_t* rawPacket)
 
 PacketTLV_t* unpackConfigUpdate(IntermediateTLV_t* rawPacket)
 {
+    PacketTLV_t* packet = createBasePacket(rawPacket);
+    if (packet == NULL)
+    {
+        //Free the raw packet
+        llnet_packet_free(rawPacket);
+        return NULL;
+    }
 
+    errno = 0;
+    PTLVData_CONFIG_UPDATE_t* unpacked = calloc(1,sizeof(PTLVData_CONFIG_UPDATE_t));
+    //Allocation failed
+    if(unpacked == NULL && errno != 0)
+    {
+        //packet allocation succeeded, so free that memory
+        free(packet);
+        //Free the raw packet
+        llnet_packet_free(rawPacket);
+        return NULL;
+    }
+    packet->length = rawPacket->length;
+    packet->timestamp = rawPacket->timestamp;
+    packet->type = rawPacket->type;
+    packet->data = unpacked;
+
+    //Note that this may be NULL if there's a failure
+    unpacked->new_pairs = parseKVList(rawPacket->data, rawPacket->length);
+
+    llnet_packet_free(rawPacket);
+    return packet;
 }
 
 PacketTLV_t* unpackUserData(IntermediateTLV_t* rawPacket)
