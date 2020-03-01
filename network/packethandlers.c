@@ -28,6 +28,7 @@ static PacketTLV_t* createBasePacket(IntermediateTLV_t* rawPacket)
 
 static List_t* parseKVList(char* rawList, size_t kvListLen)
 {
+    //TODO make sure we quit gracefully in the case of padding
     ArrayList_t* kvList = arraylist_init();
     if(kvList == NULL)
     {
@@ -38,18 +39,24 @@ static List_t* parseKVList(char* rawList, size_t kvListLen)
     while(kvString < (rawList + kvListLen))
     {
         //Get the length of the key
+        //TODO check to make sure keyLen > 0
         size_t keyLen = strlen(kvString);
         //Copy the key into memory we control
+        //TODO check for failure
         char* key = malloc(sizeof(char) * (keyLen + 1));
+        //TODO you can probably save time here by using strcpy since we're dynamically allocating memory according to
+        //string size
         strncpy(key, kvString, keyLen+1);
         //The type is the first byte after the nul terminator
         KVPair_Type_t type = kvString[keyLen + 1];
         //The length is in the next 3 bytes
         size_t valueLength = kvString[keyLen+2] << 16 | kvString[keyLen+3] << 8 | kvString[keyLen+4];
         //Copy the value into memory we control
+        //TODO check for failure
         void* value = malloc(valueLength);
         memcpy(value, kvString + keyLen + 5, valueLength);
         //Store the K-TLV structure
+        //TODO check for failure
         KVPairTLV_t* thisPair = malloc(sizeof(KVPairTLV_t));
         thisPair->key = key;
         thisPair->type = type;
@@ -62,6 +69,23 @@ static List_t* parseKVList(char* rawList, size_t kvListLen)
         kvString +=keyLen+1+1+3+valueLength+1;
     }
     return (List_t*)kvList;
+}
+
+static List_t* getStringsFromArbitraryData(char* rawList, size_t rawLen)
+{
+    ArrayList_t* strings = arraylist_init();
+    char* currentString = rawList;
+    while(currentString < rawList + rawLen)
+    {
+        size_t len = strlen(currentString);
+        //String length plus nul terminator
+        char* str = malloc(sizeof(char) * (len + 1));
+        strcpy(str, currentString);
+        arraylist_add(strings, str);
+        //String length plus nul terminator
+        currentString += len + 1;
+    }
+    return (List_t*) strings;
 }
 
 PacketTLV_t* unpackInit(IntermediateTLV_t* rawPacket)
@@ -232,13 +256,41 @@ PacketTLV_t* unpackConfigRequest(IntermediateTLV_t* rawPacket)
     packet->timestamp = rawPacket->timestamp;
     packet->length = rawPacket->length;
     packet->data = (PTLVData_Base_t*)unpacked;
+    unpacked->keys = getStringsFromArbitraryData(rawPacket->data, rawPacket->length);
 
-    //TODO get the rest of the data
+    llnet_packet_free(rawPacket);
+    return packet;
 }
 
 PacketTLV_t* unpackConfigResponse(IntermediateTLV_t* rawPacket)
 {
+    PacketTLV_t* packet = createBasePacket(rawPacket);
+    if (packet == NULL)
+    {
+        //Free the raw packet
+        llnet_packet_free(rawPacket);
+        return NULL;
+    }
 
+    errno = 0;
+    PTLVData_CONFIG_RESPONSE_t* unpacked = calloc(1,sizeof(PTLVData_CONFIG_RESPONSE_t));
+    //Allocation failed
+    if(unpacked == NULL && errno != 0)
+    {
+        //packet allocation succeeded, so free that memory
+        free(packet);
+        //Free the raw packet
+        llnet_packet_free(rawPacket);
+        return NULL;
+    }
+    packet->type = rawPacket->type;
+    packet->timestamp = rawPacket->timestamp;
+    packet->length = rawPacket->length;
+    packet->data = (PTLVData_Base_t*)unpacked;
+    unpacked->pairs = getStringsFromArbitraryData(rawPacket->data, rawPacket->length);
+
+    llnet_packet_free(rawPacket);
+    return packet;
 }
 
 PacketTLV_t* unpackConfigUpdate(IntermediateTLV_t* rawPacket)
@@ -324,14 +376,12 @@ void destroyInit(PacketTLV_t* initPacket)
     initPacket->data = NULL;
     free(initPacket);
 }
-
 void destroyStateRequest(PacketTLV_t* stateRequestPacket)
 {
     free(stateRequestPacket->data);
     stateRequestPacket->data = NULL;
     free(stateRequestPacket);
 }
-
 void destroyStateResponse(PacketTLV_t* stateResponsePacket)
 {
     PTLVData_STATE_RESPONSE_t* data = (PTLVData_STATE_RESPONSE_t*)stateResponsePacket->data;
@@ -341,7 +391,6 @@ void destroyStateResponse(PacketTLV_t* stateResponsePacket)
     data = NULL;
     free(stateResponsePacket);
 }
-
 void destroyStateUpdate(PacketTLV_t* stateUpdatePacket)
 {
     PTLVData_STATE_UPDATE_t* data = (PTLVData_STATE_UPDATE_t*)stateUpdatePacket->data;
@@ -351,7 +400,6 @@ void destroyStateUpdate(PacketTLV_t* stateUpdatePacket)
     data = NULL;
     free(stateUpdatePacket);
 }
-
 void destroyConfigRequest(PacketTLV_t* configRequestPacket)
 {
     PTLVData_CONFIG_REQUEST_t* data = (PTLVData_CONFIG_REQUEST_t*)configRequestPacket->data;
@@ -361,7 +409,6 @@ void destroyConfigRequest(PacketTLV_t* configRequestPacket)
     data = NULL;
     free(configRequestPacket);
 }
-
 void destroyConfigResponse(PacketTLV_t* configResponsePacket)
 {
     PTLVData_CONFIG_RESPONSE_t* data = (PTLVData_CONFIG_RESPONSE_t*)configResponsePacket->data;
@@ -371,7 +418,6 @@ void destroyConfigResponse(PacketTLV_t* configResponsePacket)
     data = NULL;
     free(configResponsePacket);
 }
-
 void destroyConfigUpdate(PacketTLV_t* configUpdatePacket)
 {
     PTLVData_CONFIG_UPDATE_t* data = (PTLVData_CONFIG_UPDATE_t*)configUpdatePacket->data;
