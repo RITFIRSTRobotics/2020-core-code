@@ -8,6 +8,15 @@
 #include "packethandlers.h"
 #include "../collections/arraylist.h"
 
+/**
+ * Creates a PacketTLV_t* from a ll packet.
+ * The returned packet contains the type, length, and timestamp from the LL packet.
+ * @param rawPacket
+ *  An IntermediateTLV_t* packet from the low-level network interface
+ * @return
+ *  A PacketTLV_t* with the type, length, and timestamp set, and the data field set to null.
+ *  This function returns NULL if the memory allocation for the return packet fails.
+ */
 static PacketTLV_t* createBasePacket(IntermediateTLV_t* rawPacket)
 {
     //Allocate memory for the packet and check for success
@@ -26,8 +35,18 @@ static PacketTLV_t* createBasePacket(IntermediateTLV_t* rawPacket)
     return packet;
 }
 
+/**
+ * Parses a key-value list as defined by the network protocol definition into a List of KV pairs.
+ * @param rawList
+ *  A byte array which encodes a list of KV pairs.
+ * @param kvListLen
+ *  The
+ * @return
+ *  A List* of KVPairTLV_t* or NULL if there was an error
+ */
 static List_t* parseKVList(char* rawList, size_t kvListLen)
 {
+    //TODO consider doing format validation and setting ERRNO appropriately
     ArrayList_t* kvList = arraylist_init();
     if(kvList == NULL)
     {
@@ -94,6 +113,16 @@ static List_t* parseKVList(char* rawList, size_t kvListLen)
     return (List_t*)kvList;
 }
 
+/**
+ * Grabs several nul-terminated strings out of an array of bytes.
+ * Sequential nul bytes will be interpreted as an empty string.
+ * @param rawList
+ *  The raw list of nul-terminated strings.
+ * @param rawLen
+ *  The length of the byte array.
+ * @return
+ *  A List_t* of strings found in \p rawList.
+ */
 static List_t* getStringsFromArbitraryData(char* rawList, size_t rawLen)
 {
     ArrayList_t* strings = arraylist_init();
