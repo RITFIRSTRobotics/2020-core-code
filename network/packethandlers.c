@@ -400,9 +400,6 @@ PacketTLV_t* unpackUserData(IntermediateTLV_t* rawPacket)
         return NULL;
     }
 
-    packet->type = rawPacket->type;
-    packet->timestamp = rawPacket->timestamp;
-    packet->length = rawPacket->length;
     packet->data = (PTLVData_Base_t*)unpacked;
 
     unpacked->left_stick_x = rawPacket->data[0];
@@ -419,7 +416,37 @@ PacketTLV_t* unpackUserData(IntermediateTLV_t* rawPacket)
 
 PacketTLV_t* unpackDebug(IntermediateTLV_t* rawPacket)
 {
+    PacketTLV_t* packet = createBasePacket(rawPacket);
+    if (packet == NULL)
+    {
+        //Free the raw packet
+        llnet_packet_free(rawPacket);
+        return NULL;
+    }
 
+    errno = 0;
+    PTLVDATA_DEBUG_t* unpacked = calloc(1,sizeof(PTLVData_DEBUG_t));
+    //Allocation failed
+    if(unpacked == NULL && errno != 0)
+    {
+        //packet allocation succeeded, so free that memory
+        free(packet);
+        //Free the raw packet
+        llnet_packet_free(rawPacket);
+        return NULL;
+    }
+
+    packet->data = (PTLVData_DEBUG_t*)unpacked;
+
+    unpacked->code_status = rawPacket->data[0];
+    unpacked->commit_hash = rawPacket->data[1] << 16| rawPacket->data[2] << 8 | rawPacket->data[3];
+    unpacked->robot_uuid = (uint32_t*)(rawPacket->data)[1];
+    unpacked->state = (RobotState_t)(rawPacket->data[8]);
+    unpacked->config_entries = (uint16_t*)(rawPacket->data[5]);
+    unpacked->arbitrary = (void*)(rawPacket->data + 12);
+
+    llnet_packet_free(rawPacket);
+    return packet;
 }
 
 void destroyInit(PacketTLV_t* initPacket)
