@@ -40,7 +40,7 @@ static PacketTLV_t* createBasePacket(IntermediateTLV_t* rawPacket)
  * @param rawList
  *  A byte array which encodes a list of KV pairs.
  * @param kvListLen
- *  The
+ *  The length of the rawList character array.
  * @return
  *  A List* of KVPairTLV_t* or NULL if there was an error
  */
@@ -308,7 +308,7 @@ PacketTLV_t* unpackConfigRequest(IntermediateTLV_t* rawPacket)
     packet->timestamp = rawPacket->timestamp;
     packet->length = rawPacket->length;
     packet->data = (PTLVData_Base_t*)unpacked;
-    unpacked->keys = getStringsFromArbitraryData(rawPacket->data, rawPacket->length);
+    unpacked->keys = getStringsFromArbitraryData((char*)rawPacket->data, rawPacket->length);
 
     llnet_packet_free(rawPacket);
     return packet;
@@ -339,7 +339,7 @@ PacketTLV_t* unpackConfigResponse(IntermediateTLV_t* rawPacket)
     packet->timestamp = rawPacket->timestamp;
     packet->length = rawPacket->length;
     packet->data = (PTLVData_Base_t*)unpacked;
-    unpacked->pairs = getStringsFromArbitraryData(rawPacket->data, rawPacket->length);
+    unpacked->pairs = getStringsFromArbitraryData((char*)rawPacket->data, rawPacket->length);
 
     llnet_packet_free(rawPacket);
     return packet;
@@ -369,10 +369,10 @@ PacketTLV_t* unpackConfigUpdate(IntermediateTLV_t* rawPacket)
     packet->length = rawPacket->length;
     packet->timestamp = rawPacket->timestamp;
     packet->type = rawPacket->type;
-    packet->data = unpacked;
+    packet->data = (PTLVData_Base_t*)unpacked;
 
     //Note that this may be NULL if there's a failure
-    unpacked->new_pairs = parseKVList(rawPacket->data, rawPacket->length);
+    unpacked->new_pairs = parseKVList((char*)rawPacket->data, rawPacket->length);
 
     llnet_packet_free(rawPacket);
     return packet;
@@ -425,7 +425,7 @@ PacketTLV_t* unpackDebug(IntermediateTLV_t* rawPacket)
     }
 
     errno = 0;
-    PTLVDATA_DEBUG_t* unpacked = calloc(1,sizeof(PTLVData_DEBUG_t));
+    PTLVData_DEBUG_t* unpacked = calloc(1,sizeof(PTLVData_DEBUG_t));
     //Allocation failed
     if(unpacked == NULL && errno != 0)
     {
@@ -436,13 +436,13 @@ PacketTLV_t* unpackDebug(IntermediateTLV_t* rawPacket)
         return NULL;
     }
 
-    packet->data = (PTLVData_DEBUG_t*)unpacked;
+    packet->data = (PTLVData_Base_t*)unpacked;
 
     unpacked->code_status = rawPacket->data[0];
     unpacked->commit_hash = rawPacket->data[1] << 16| rawPacket->data[2] << 8 | rawPacket->data[3];
-    unpacked->robot_uuid = (uint32_t*)(rawPacket->data)[1];
+    unpacked->robot_uuid = ((uint32_t*)(rawPacket->data))[1];
     unpacked->state = (RobotState_t)(rawPacket->data[8]);
-    unpacked->config_entries = (uint16_t*)(rawPacket->data[5]);
+    unpacked->config_entries = ((uint16_t*)(rawPacket->data))[5];
     unpacked->arbitrary = (void*)(rawPacket->data + 12);
 
     llnet_packet_free(rawPacket);
@@ -514,7 +514,7 @@ void destroyUserData(PacketTLV_t* userDataPacket)
 }
 void destroyDebug(PacketTLV_t* debugPacket)
 {
-    PTLVDATA_DEBUG_t* debugData = (PTLVDATA_DEBUG_t*)(debugPacket->data);
+    PTLVData_DEBUG_t* debugData = (PTLVData_DEBUG_t*)(debugPacket->data);
     free(debugData->arbitrary);
     debugData->arbitrary = NULL;
     free(debugData);

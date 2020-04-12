@@ -150,7 +150,7 @@ typedef struct PTLVData_DEBUG {
     uint8_t reserved;
     uint16_t config_entries;
     void* arbitrary;
-} PTLVDATA_DEBUG_t;
+} PTLVData_DEBUG_t;
 
 #ifdef __cplusplus
 }
