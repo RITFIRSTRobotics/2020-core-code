@@ -451,12 +451,20 @@ PacketTLV_t* unpackDebug(IntermediateTLV_t* rawPacket)
 
 void destroyInit(PacketTLV_t* initPacket)
 {
+    if(initPacket->type != pt_INIT)
+    {
+        //TODO log error message like other checks
+    }
     free(initPacket->data);
     initPacket->data = NULL;
     free(initPacket);
 }
 void destroyStateRequest(PacketTLV_t* stateRequestPacket)
 {
+    if(stateRequestPacket->type != pt_STATE_REQUEST)
+    {
+        //TODO log error message like other checks
+    }
     free(stateRequestPacket->data);
     stateRequestPacket->data = NULL;
     free(stateRequestPacket);
@@ -569,6 +577,10 @@ void destroyConfigUpdate(PacketTLV_t* configUpdatePacket)
 }
 void destroyUserData(PacketTLV_t* userDataPacket)
 {
+    if(userDataPacket->type != pt_USER_DATA)
+    {
+        //TODO log error message like other checks
+    }
     free(userDataPacket->data);
     userDataPacket->data = NULL;
     free(userDataPacket);
