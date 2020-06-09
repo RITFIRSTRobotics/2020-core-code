@@ -11,6 +11,16 @@
 #include "../network/lowlevel.h"
 #include "../utils/dbgprint.h"
 
+static const uint8_t INIT_DATA[] = {
+        0x55, 0xAA, 0x55, 0xAA
+};
+
+static PTLVData_INIT_t knownGoodInit={
+       0xAA55AA55
+};
+
+static IntermediateTLV_t* initPacket = NULL;
+
 static const uint8_t USER_DATA_DATA[] = {
         //Left Joy X, left joy y, right joy x, right joy y
         0x55,         0xAA,       0xCC,        0x33,
@@ -44,6 +54,14 @@ void setup(PacketType_t setupType)
 {
     switch(setupType)
     {
+        case pt_INIT:
+            initPacket = malloc(sizeof(IntermediateTLV_t));
+            initPacket->type = pt_INIT;
+            initPacket->length = sizeof(INIT_DATA);
+            initPacket->data = (uint8_t*)malloc(sizeof(INIT_DATA));
+            memcpy(initPacket->data, INIT_DATA, sizeof(INIT_DATA));
+            initPacket->timestamp = 0xAAAAAAAA;
+            break;
         case pt_USER_DATA:
             userDataPacket = malloc(sizeof(IntermediateTLV_t));
             userDataPacket->type = pt_USER_DATA;
@@ -76,6 +94,9 @@ void teardown(PacketType_t setupType)
 {
     switch(setupType)
     {
+        case pt_INIT:
+            initPacket = NULL;
+            break;
         case pt_USER_DATA:
             userDataPacket = NULL;
             break;
@@ -236,6 +257,48 @@ int t02_testStateUpdateUnpacking()
     return errCount;
 }
 
+int t03_testInitUnpacking()
+{
+    setup(pt_INIT);
+    int errCount = 0;
+    PacketTLV_t *unpackedPacket = unpackInit(initPacket);
+    //Something failed in the function.  They system is probably out of memory
+    if (unpackedPacket == NULL) {
+        dbg_error("unpackInit returned NULL!\n")
+        errCount++;
+    }
+
+    //Check if the type was stored correctly
+    if (unpackedPacket->type != pt_INIT) {
+        dbg_error("unpackInit returned incorrect packetType!\n");
+        errCount++;
+    }
+
+    //Check if the timestamp was stored correctly
+    if (unpackedPacket->timestamp != 0xAAAAAAAA) {
+        dbg_error("unpackInit returned incorrect timestamp!\n");
+        errCount++;
+    }
+
+    //Check if the length was stored correctly
+    if (unpackedPacket->length != sizeof(INIT_DATA)) {
+        dbg_error("unpackInit returned incorrect length!\n");
+        errCount++;
+    }
+
+    //Check the state and reserved fields
+    PTLVData_INIT_t* unpackedData = (PTLVData_INIT_t*)unpackedPacket->data;
+    if(unpackedData->robot_uuid != knownGoodInit.robot_uuid)
+    {
+        dbg_error("unpackInit returned incorrect robot_uuid!\n");
+        printf("%x\n", unpackedData->robot_uuid);
+        errCount++;
+    }
+    teardown(pt_STATE_UPDATE);
+    destroyInit(unpackedPacket);
+    return errCount;
+}
+
 int main()
 {
     // Run tests on both types of list
@@ -260,6 +323,17 @@ int main()
         printf("^^^ test errors\n");
     }
     allErrors += error;
+
+    printf("Starting Test03!\n");
+    error = t03_testInitUnpacking();
+    if(error == 0 ) {
+        printf("success!\n");
+    }
+    else {
+        printf("^^^ test errors\n");
+    }
+    allErrors += error;
+
     // Tests finished, handle the error code
     if (allErrors == 0) {
         return EXIT_SUCCESS;
