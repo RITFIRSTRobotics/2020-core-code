@@ -463,47 +463,108 @@ void destroyStateRequest(PacketTLV_t* stateRequestPacket)
 }
 void destroyStateResponse(PacketTLV_t* stateResponsePacket)
 {
-    PTLVData_STATE_RESPONSE_t* data = (PTLVData_STATE_RESPONSE_t*)stateResponsePacket->data;
-    free(data->arbitrary);
-    data->arbitrary = NULL;
-    free(data);
-    data = NULL;
+    if(stateResponsePacket->type == pt_STATE_RESPONSE)
+    {
+        PTLVData_STATE_RESPONSE_t* data = (PTLVData_STATE_RESPONSE_t*)stateResponsePacket->data;
+        free(data->arbitrary);
+        data->arbitrary = NULL;
+        //We're guaranteed to free this later
+        data = NULL;
+    }
+    else
+    {
+        //Incorrect packet type or corrupted packet, refusing to free possibly non-existent packet-specific data.
+        //This may cause data leaks!
+        //TODO log error message
+        //TODO log packet type and what type the programmer wants us to free
+    }
+    //Free the packet structure shared by all packets
+    free(stateResponsePacket->data);
+    stateResponsePacket->data = NULL;
     free(stateResponsePacket);
 }
 void destroyStateUpdate(PacketTLV_t* stateUpdatePacket)
 {
-    PTLVData_STATE_UPDATE_t* data = (PTLVData_STATE_UPDATE_t*)stateUpdatePacket->data;
-    free(data->arbitrary);
-    data->arbitrary = NULL;
-    free(data);
-    data = NULL;
+    if(stateUpdatePacket->type == pt_STATE_UPDATE)
+    {
+        PTLVData_STATE_UPDATE_t* data = (PTLVData_STATE_UPDATE_t*)stateUpdatePacket->data;
+        free(data->arbitrary);
+        data->arbitrary = NULL;
+        //We're guaranteed to free this later
+        data = NULL;
+    }
+    else
+    {
+        //Incorrect packet type or corrupted packet, refusing to free possibly non-existent packet-specific data.
+        //This may cause data leaks!
+        //TODO log error message
+        //TODO log packet type and what type the programmer wants us to free
+    }
+    free(stateUpdatePacket->data);
+    stateUpdatePacket->data = NULL;
     free(stateUpdatePacket);
 }
 void destroyConfigRequest(PacketTLV_t* configRequestPacket)
 {
-    PTLVData_CONFIG_REQUEST_t* data = (PTLVData_CONFIG_REQUEST_t*)configRequestPacket->data;
-    list_free(data->keys);
-    data->keys = NULL;
-    free(data);
-    data = NULL;
+    if(configRequestPacket->type == pt_CONFIG_REQUEST)
+    {
+        PTLVData_CONFIG_REQUEST_t* data = (PTLVData_CONFIG_REQUEST_t*)configRequestPacket->data;
+        list_free(data->keys);
+        data->keys = NULL;
+        //We're guaranteed to free this later
+        data = NULL;
+    }
+    else
+    {
+        //Incorrect packet type or corrupted packet, refusing to free possibly non-existent packet-specific data.
+        //This may cause data leaks!
+        //TODO log error message
+        //TODO log packet type and what type the programmer wants us to free
+    }
+    free(configRequestPacket->data);
+    configRequestPacket->data = NULL;
     free(configRequestPacket);
 }
 void destroyConfigResponse(PacketTLV_t* configResponsePacket)
 {
-    PTLVData_CONFIG_RESPONSE_t* data = (PTLVData_CONFIG_RESPONSE_t*)configResponsePacket->data;
-    list_free(data->pairs);
-    data->pairs = NULL;
-    free(data);
-    data = NULL;
+    if(configResponsePacket->type == pt_CONFIG_RESPONSE)
+    {
+        PTLVData_CONFIG_RESPONSE_t* data = (PTLVData_CONFIG_RESPONSE_t*)configResponsePacket->data;
+        list_free(data->pairs);
+        data->pairs = NULL;
+        //We're guaranteed to free this later
+        data = NULL;
+    }
+    else
+    {
+        //Incorrect packet type or corrupted packet, refusing to free possibly non-existent packet-specific data.
+        //This may cause data leaks!
+        //TODO log error message
+        //TODO log packet type and what type the programmer wants us to free
+    }
+    free(configResponsePacket->data);
+    configResponsePacket->data = NULL;
     free(configResponsePacket);
 }
 void destroyConfigUpdate(PacketTLV_t* configUpdatePacket)
 {
-    PTLVData_CONFIG_UPDATE_t* data = (PTLVData_CONFIG_UPDATE_t*)configUpdatePacket->data;
-    list_free(data->new_pairs);
-    data->new_pairs = NULL;
-    free(data);
-    data = NULL;
+    if(configUpdatePacket->type == pt_CONFIG_UPDATE)
+    {
+        PTLVData_CONFIG_UPDATE_t* data = (PTLVData_CONFIG_UPDATE_t*)configUpdatePacket->data;
+        list_free(data->new_pairs);
+        data->new_pairs = NULL;
+        data = NULL;
+        //We're guaranteed to free this later
+    }
+    else
+    {
+        //Incorrect packet type or corrupted packet, refusing to free possibly non-existent packet-specific data.
+        //This may cause data leaks!
+        //TODO log error message
+        //TODO log packet type and what type the programmer wants us to free
+    }
+    free(configUpdatePacket->data);
+    configUpdatePacket->data = NULL;
     free(configUpdatePacket);
 }
 void destroyUserData(PacketTLV_t* userDataPacket)
@@ -514,10 +575,22 @@ void destroyUserData(PacketTLV_t* userDataPacket)
 }
 void destroyDebug(PacketTLV_t* debugPacket)
 {
-    PTLVData_DEBUG_t* debugData = (PTLVData_DEBUG_t*)(debugPacket->data);
-    free(debugData->arbitrary);
-    debugData->arbitrary = NULL;
-    free(debugData);
-    debugData = NULL;
+    if(debugPacket->type == pt_CONFIG_UPDATE)
+    {
+        PTLVData_DEBUG_t* debugData = (PTLVData_DEBUG_t*)(debugPacket->data);
+        free(debugData->arbitrary);
+        debugData->arbitrary = NULL;
+        //We're guaranteed to free this later.
+        debugData = NULL;
+    }
+    else
+    {
+        //Incorrect packet type or corrupted packet, refusing to free possibly non-existent packet-specific data.
+        //This may cause data leaks!
+        //TODO log error message
+        //TODO log packet type and what type the programmer wants us to free
+    }
+    free(debugPacket->data);
+    debugPacket->data = NULL;
     free(debugPacket);
 }
