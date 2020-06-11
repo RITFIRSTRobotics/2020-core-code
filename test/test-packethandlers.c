@@ -21,6 +21,8 @@ static PTLVData_INIT_t knownGoodInit={
 
 static IntermediateTLV_t* initPacket = NULL;
 
+static IntermediateTLV_t* stateRequestPacket = NULL;
+
 static const uint8_t USER_DATA_DATA[] = {
         //Left Joy X, left joy y, right joy x, right joy y
         0x55,         0xAA,       0xCC,        0x33,
@@ -71,6 +73,11 @@ void setup(PacketType_t setupType)
             userDataPacket->timestamp = 0xAAAAAAAA;
             break;
         case pt_STATE_REQUEST:
+            stateRequestPacket = malloc(sizeof(IntermediateTLV_t));
+            stateRequestPacket->type = pt_STATE_REQUEST;
+            stateRequestPacket->length = 0;
+            stateRequestPacket->data = NULL;
+            stateRequestPacket->timestamp = 0xAAAAAAAA;
             break;
         case pt_STATE_RESPONSE:
 
@@ -101,7 +108,7 @@ void teardown(PacketType_t setupType)
             userDataPacket = NULL;
             break;
         case pt_STATE_REQUEST:
-
+            stateRequestPacket = NULL;
             break;
         case pt_STATE_RESPONSE:
 
@@ -294,8 +301,42 @@ int t03_testInitUnpacking()
         printf("%x\n", unpackedData->robot_uuid);
         errCount++;
     }
-    teardown(pt_STATE_UPDATE);
+    teardown(pt_INIT);
     destroyInit(unpackedPacket);
+    return errCount;
+}
+
+int t04_testStateRequestUnpacking()
+{
+    setup(pt_STATE_REQUEST);
+    int errCount = 0;
+    PacketTLV_t *unpackedPacket = unpackStateRequest(stateRequestPacket);
+    //Something failed in the function.  They system is probably out of memory
+    if (unpackedPacket == NULL) {
+        dbg_error("unpackStateRequest returned NULL!\n")
+        errCount++;
+    }
+
+    //Check if the type was stored correctly
+    if (unpackedPacket->type != pt_STATE_REQUEST) {
+        dbg_error("unpackStateRequest returned incorrect packetType!\n");
+        errCount++;
+    }
+
+    //Check if the timestamp was stored correctly
+    if (unpackedPacket->timestamp != 0xAAAAAAAA) {
+        dbg_error("unpackStateRequest returned incorrect timestamp!\n");
+        errCount++;
+    }
+
+    //Check if the length was stored correctly
+    if (unpackedPacket->length != 0) {
+        dbg_error("unpackStateRequest returned incorrect length!\n");
+        errCount++;
+    }
+
+    teardown(pt_STATE_REQUEST);
+    destroyStateRequest(unpackedPacket);
     return errCount;
 }
 
@@ -326,6 +367,16 @@ int main()
 
     printf("Starting Test03!\n");
     error = t03_testInitUnpacking();
+    if(error == 0 ) {
+        printf("success!\n");
+    }
+    else {
+        printf("^^^ test errors\n");
+    }
+    allErrors += error;
+
+    printf("Starting Test04!\n");
+    error = t04_testStateRequestUnpacking();
     if(error == 0 ) {
         printf("success!\n");
     }
