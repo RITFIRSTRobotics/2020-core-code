@@ -34,6 +34,9 @@ static PTLVData_USER_DATA_t knownGoodUserData = {
 
 static IntermediateTLV_t* userDataPacket = NULL;
 
+//State request is empty except for header, no need for known-good or data array
+static IntermediateTLV_t* stateRequestPacket = NULL;
+
 static const uint8_t STATE_UPDATE_DATA[] = {
         //new code, reserved
         0x02, 0xFF, 0xAA, 0x55,
@@ -71,9 +74,13 @@ void setup(PacketType_t setupType)
             userDataPacket->timestamp = 0xAAAAAAAA;
             break;
         case pt_STATE_REQUEST:
+            stateRequestPacket = malloc(sizeof(IntermediateTLV_t));
+            stateRequestPacket->type = pt_STATE_REQUEST;
+            stateRequestPacket->length = 0;
+            stateRequestPacket->data = NULL;
+            stateRequestPacket->timestamp = 0xAAAAAAAA;
             break;
         case pt_STATE_RESPONSE:
-
             break;
         case pt_STATE_UPDATE:
             stateUpdatePacket = malloc(sizeof(IntermediateTLV_t));
@@ -84,6 +91,18 @@ void setup(PacketType_t setupType)
             memcpy(stateUpdatePacket->data, STATE_UPDATE_DATA, sizeof(STATE_UPDATE_DATA));
             knownGoodStateUpdate.arbitrary = malloc(sizeof(STATE_UPDATE_DATA) - 4);
             memcpy(knownGoodStateUpdate.arbitrary, STATE_UPDATE_DATA+4, sizeof(STATE_UPDATE_DATA) - 4);
+            break;
+        case pt_CONFIG_REQUEST:
+
+            break;
+        case pt_CONFIG_RESPONSE:
+
+            break;
+        case pt_CONFIG_UPDATE:
+
+            break;
+        case pt_DEBUG:
+
             break;
         default:
             break;
@@ -101,7 +120,7 @@ void teardown(PacketType_t setupType)
             userDataPacket = NULL;
             break;
         case pt_STATE_REQUEST:
-
+            stateRequestPacket = NULL;
             break;
         case pt_STATE_RESPONSE:
 
@@ -294,8 +313,49 @@ int t03_testInitUnpacking()
         printf("%x\n", unpackedData->robot_uuid);
         errCount++;
     }
-    teardown(pt_STATE_UPDATE);
+    teardown(pt_INIT);
     destroyInit(unpackedPacket);
+    return errCount;
+}
+
+int t04_testStateRequestUnpacking()
+{
+    setup(pt_STATE_REQUEST);
+    int errCount = 0;
+    PacketTLV_t *unpackedPacket = unpackStateRequest(stateRequestPacket);
+    //Something failed in the function.  They system is probably out of memory
+    if (unpackedPacket == NULL) {
+        dbg_error("unpackStateRequest returned NULL!\n")
+        errCount++;
+    }
+
+    //Check if the type was stored correctly
+    if (unpackedPacket->type != pt_STATE_REQUEST) {
+        dbg_error("unpackStateRequest returned incorrect packetType!\n");
+        errCount++;
+    }
+
+    //Check if the timestamp was stored correctly
+    if (unpackedPacket->timestamp != 0xAAAAAAAA) {
+        dbg_error("unpackStateRequest returned incorrect timestamp!\n");
+        errCount++;
+    }
+
+    //Check if the length was stored correctly
+    if (unpackedPacket->length != 0) {
+        dbg_error("unpackStateRequest returned incorrect length!\n");
+        errCount++;
+    }
+
+    //Check the state and reserved fields
+    struct PTLVData_STATE_REQUEST_t* unpackedData = (struct PTLVData_STATE_REQUEST_t*)unpackedPacket->data;
+    if(unpackedData != NULL)
+    {
+        dbg_error("unpackStateRequest unpacked data from empty packet\n");
+        errCount++;
+    }
+    teardown(pt_STATE_REQUEST);
+    destroyStateRequest(unpackedPacket);
     return errCount;
 }
 
@@ -326,6 +386,16 @@ int main()
 
     printf("Starting Test03!\n");
     error = t03_testInitUnpacking();
+    if(error == 0 ) {
+        printf("success!\n");
+    }
+    else {
+        printf("^^^ test errors\n");
+    }
+    allErrors += error;
+
+    printf("Starting Test04!\n");
+    error = t04_testStateRequestUnpacking();
     if(error == 0 ) {
         printf("success!\n");
     }
