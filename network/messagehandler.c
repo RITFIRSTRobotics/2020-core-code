@@ -75,6 +75,7 @@ int mh_init()
 
 void sort_packet(IntermediateTLV_t* packet)
 {
+    //TODO the rest of this
     switch(packet->type)
     {
         case pt_INIT:
