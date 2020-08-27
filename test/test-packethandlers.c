@@ -37,6 +37,20 @@ static IntermediateTLV_t* userDataPacket = NULL;
 //State request is empty except for header, no need for known-good or data array
 static IntermediateTLV_t* stateRequestPacket = NULL;
 
+static const uint8_t STATE_RESPONSE_DATA[] = {
+    0xFF, 0x01, 0x02, 0x03,
+    0x00, 0x01, 0x02, 0x03,
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0A, 0x0B,
+    0x0C, 0x0D, 0x0E, 0x0F
+};
+
+static PTLVData_STATE_RESPONSE_t knownGoodStateResponse = {
+        0xFF, 0x010203, NULL
+};
+
+IntermediateTLV_t* stateResponsePacket = NULL;
+
 static const uint8_t STATE_UPDATE_DATA[] = {
         //new code, reserved
         0x02, 0xFF, 0xAA, 0x55,
@@ -81,6 +95,14 @@ void setup(PacketType_t setupType)
             stateRequestPacket->timestamp = 0xAAAAAAAA;
             break;
         case pt_STATE_RESPONSE:
+            stateResponsePacket = malloc(sizeof(IntermediateTLV_t));
+            stateResponsePacket->type = pt_STATE_RESPONSE;
+            stateResponsePacket->length = sizeof(STATE_RESPONSE_DATA);
+            stateResponsePacket->timestamp = 0xAAAAAAAA;
+            stateResponsePacket->data = malloc(sizeof(STATE_RESPONSE_DATA));
+            memcpy(stateResponsePacket->data, STATE_RESPONSE_DATA, sizeof(STATE_RESPONSE_DATA));
+            knownGoodStateResponse.arbitrary = malloc(sizeof(STATE_RESPONSE_DATA) - 4);
+            memcpy(knownGoodStateResponse.arbitrary, STATE_RESPONSE_DATA+4, sizeof(STATE_RESPONSE_DATA) - 4);
             break;
         case pt_STATE_UPDATE:
             stateUpdatePacket = malloc(sizeof(IntermediateTLV_t));
@@ -123,7 +145,9 @@ void teardown(PacketType_t setupType)
             stateRequestPacket = NULL;
             break;
         case pt_STATE_RESPONSE:
-
+            free(knownGoodStateResponse.arbitrary);
+            knownGoodStateResponse.arbitrary = NULL;
+            stateResponsePacket = NULL;
             break;
         case pt_STATE_UPDATE:
             free(knownGoodStateUpdate.arbitrary);
@@ -359,6 +383,74 @@ int t04_testStateRequestUnpacking()
     return errCount;
 }
 
+int t05_testStateResponseUnpacking()
+{
+    setup(pt_STATE_RESPONSE);
+    int errCount = 0;
+    PacketTLV_t *unpackedPacket = unpackStateResponse(stateResponsePacket);
+    //Something failed in the function.  They system is probably out of memory
+    if (unpackedPacket == NULL) {
+        dbg_error("unpackStateResponse returned NULL!\n")
+        errCount++;
+    }
+
+    //Check if the type was stored correctly
+    if (unpackedPacket->type != pt_STATE_RESPONSE) {
+        dbg_error("unpackStateResponse returned incorrect packetType!\n");
+        errCount++;
+    }
+
+    //Check if the timestamp was stored correctly
+    if (unpackedPacket->timestamp != 0xAAAAAAAA) {
+        dbg_error("unpackStateResponse returned incorrect timestamp!\n");
+        errCount++;
+    }
+
+    //Check if the length was stored correctly
+    if (unpackedPacket->length != sizeof(STATE_RESPONSE_DATA)) {
+        dbg_error("unpackStateResponse returned incorrect length!\n");
+        errCount++;
+    }
+
+    //Check the state and reserved fields
+    PTLVData_STATE_RESPONSE_t* unpackedData = (PTLVData_STATE_RESPONSE_t*)unpackedPacket->data;
+    if(unpackedData->state != knownGoodStateResponse.state)
+    {
+        dbg_error("unpackStateResponse returned incorrect state!\n");
+        errCount++;
+    }
+    if(unpackedData->reserved != knownGoodStateResponse.reserved)
+    {
+        //Only a warning since this is not currently critical
+        dbg_warning("unpackStateResponse returned incorrect reserved data!\n");
+    }
+
+    //Check the arbitrary data
+    uint8_t* arbitraryData = (uint8_t*)unpackedData->arbitrary;
+    //No data was returned
+    if(arbitraryData == NULL)
+    {
+        dbg_error("UnpackStateResponse did not unpack arbitrary data!");
+        errCount++;
+    }
+        //Check contents of data
+    else
+    {
+        for (int i = 0; i < unpackedPacket->length-4; i++)
+        {
+            if (arbitraryData[i] != ((uint8_t*)(knownGoodStateResponse.arbitrary))[i])
+            {
+                dbg_error("UnpackStateUpdate incorrectly unpacked arbitrary data");
+                errCount++;
+                break;
+            }
+        }
+    }
+    teardown(pt_STATE_RESPONSE);
+    destroyStateResponse(unpackedPacket);
+    return errCount;
+}
+
 int main()
 {
     // Run tests on both types of list
@@ -396,6 +488,16 @@ int main()
 
     printf("Starting Test04!\n");
     error = t04_testStateRequestUnpacking();
+    if(error == 0 ) {
+        printf("success!\n");
+    }
+    else {
+        printf("^^^ test errors\n");
+    }
+    allErrors += error;
+
+    printf("Starting Test05!\n");
+    error = t05_testStateResponseUnpacking();
     if(error == 0 ) {
         printf("success!\n");
     }
