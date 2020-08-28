@@ -55,4 +55,4 @@ test-llnet: $(OBJ_DIR)/lowlevel.o $(TEST_OBJ_DIR)/test-llnet.o $(OBJ_DIR)/arrayl
 ### CI testing recipes
 
 ci-build: all
-ci-test:  test-llnet
+ci-test:  test-llnet test-packethandlers
