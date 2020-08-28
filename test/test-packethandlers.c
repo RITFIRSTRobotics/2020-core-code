@@ -10,6 +10,10 @@
 #include "../network/packet.h"
 #include "../network/lowlevel.h"
 #include "../utils/dbgprint.h"
+#include "../collections/arraylist.h"
+#include "../collections/list.h"
+
+#define MIN(x,y) (x<y?x:y)
 
 static const uint8_t INIT_DATA[] = {
         0x55, 0xAA, 0x55, 0xAA
@@ -67,6 +71,33 @@ static PTLVData_STATE_UPDATE_t knownGoodStateUpdate = {
 
 static IntermediateTLV_t* stateUpdatePacket = NULL;
 
+static const unsigned int numConfigKeys = 3;
+static const char* CONFIG_KEYS[] = {
+        "test_key",
+        "test_key2",
+        "test_key3"
+};
+
+static const uint8_t CONFIG_REQUEST_DATA[] = {
+        //"test_key", "test_key2", "test_key3"
+        0x74, 0x65, 0x73, 0x74,
+        0x5F, 0x6B, 0x65, 0x79,
+        0x00, 0x74, 0x65, 0x73,
+        0x74, 0x5F, 0x6B, 0x65,
+        0x79, 0x32, 0x00, 0x74,
+        0x65, 0x73, 0x74, 0x5F,
+        0x6B, 0x65, 0x79, 0x33,
+        0x00, 0x00, 0x00, 0x00
+};
+
+//This type holds a List_t for the keys requested, this is populated in setup
+static PTLVData_CONFIG_REQUEST_t knownGoodConfigRequest = {
+        NULL
+};
+
+static IntermediateTLV_t* configRequestPacket = NULL;
+
+
 void setup(PacketType_t setupType)
 {
     switch(setupType)
@@ -115,7 +146,22 @@ void setup(PacketType_t setupType)
             memcpy(knownGoodStateUpdate.arbitrary, STATE_UPDATE_DATA+4, sizeof(STATE_UPDATE_DATA) - 4);
             break;
         case pt_CONFIG_REQUEST:
-
+            configRequestPacket = malloc(sizeof(IntermediateTLV_t));
+            configRequestPacket->type = pt_CONFIG_REQUEST;
+            configRequestPacket->length = sizeof(CONFIG_REQUEST_DATA);
+            configRequestPacket->timestamp = 0xAAAAAAAA;
+            configRequestPacket->data = malloc(sizeof(CONFIG_REQUEST_DATA));
+            memcpy(configRequestPacket->data, CONFIG_REQUEST_DATA, sizeof(CONFIG_REQUEST_DATA));
+            knownGoodConfigRequest.keys = (List_t*)arraylist_init_len(3);
+            char* key1 = (char*)malloc(strlen(CONFIG_KEYS[0]) + 1);
+            strcpy(key1, CONFIG_KEYS[0]);
+            char* key2 = (char*)malloc(strlen(CONFIG_KEYS[1])+ 1);
+            strcpy(key2, CONFIG_KEYS[1]);
+            char* key3 = (char*)malloc(strlen(CONFIG_KEYS[2]) + 1);
+            strcpy(key3, CONFIG_KEYS[2]);
+            arraylist_add((ArrayList_t*)knownGoodConfigRequest.keys, key1);
+            arraylist_add((ArrayList_t*)knownGoodConfigRequest.keys, key2);
+            arraylist_add((ArrayList_t*)knownGoodConfigRequest.keys, key3);
             break;
         case pt_CONFIG_RESPONSE:
 
@@ -153,6 +199,11 @@ void teardown(PacketType_t setupType)
             free(knownGoodStateUpdate.arbitrary);
             knownGoodStateUpdate.arbitrary = NULL;
             break;
+        case pt_CONFIG_REQUEST:
+            free(arraylist_get((ArrayList_t*)knownGoodConfigRequest.keys, 0));
+            free(arraylist_get((ArrayList_t*)knownGoodConfigRequest.keys, 1));
+            free(arraylist_get((ArrayList_t*)knownGoodConfigRequest.keys, 2));
+            arraylist_free((ArrayList_t*)knownGoodConfigRequest.keys);
         default:
             break;
     }
@@ -451,6 +502,64 @@ int t05_testStateResponseUnpacking()
     return errCount;
 }
 
+int t06_testConfigRequestUnpacking()
+{
+    setup(pt_CONFIG_REQUEST);
+    int errCount = 0;
+    PacketTLV_t *unpackedPacket = unpackConfigRequest(configRequestPacket);
+    //Something failed in the function.  They system is probably out of memory
+    if (unpackedPacket == NULL) {
+        dbg_error("unpackConfigRequest returned NULL!\n")
+        errCount++;
+    }
+
+    //Check if the type was stored correctly
+    if (unpackedPacket->type != pt_CONFIG_REQUEST) {
+        dbg_error("unpackConfigRequest returned incorrect packetType!\n");
+        errCount++;
+    }
+
+    //Check if the timestamp was stored correctly
+    if (unpackedPacket->timestamp != 0xAAAAAAAA) {
+        dbg_error("unpackConfigRequest returned incorrect timestamp!\n");
+        errCount++;
+    }
+
+    //Check if the length was stored correctly
+    if (unpackedPacket->length != sizeof(CONFIG_REQUEST_DATA)) {
+        dbg_error("unpackConfigRequest returned incorrect length!\n");
+        errCount++;
+    }
+
+    //Check that the keys were unpacked
+    PTLVData_CONFIG_REQUEST_t* unpackedData = (PTLVData_CONFIG_REQUEST_t*)unpackedPacket->data;
+    if(unpackedData->keys == NULL)
+    {
+        dbg_error("unpackConfigRequest did not unpack the request list");
+        errCount++;
+    }
+    //Check that the correct number of keys were unpacked
+    if(list_size(unpackedData->keys) != numConfigKeys)
+    {
+        dbg_error("unpackConfigRequest did not unpack the correct number of keys");
+        printf("%ud != %ud", list_size(unpackedData->keys), numConfigKeys);
+        errCount++;
+    }
+    //Check the contents of the keys list
+    for(unsigned int i = 0; i < MIN(list_size(unpackedData->keys), numConfigKeys); i++)
+    {
+        if(strcmp(list_get(unpackedData->keys,i), CONFIG_KEYS[i]) != 0)
+        {
+            dbg_error("unpackConfigRequest did not correctly unpack the request list");
+            printf("%s != %s", (char*)list_get(unpackedData->keys, i), CONFIG_KEYS[i]);
+            errCount++;
+        }
+    }
+    teardown(pt_CONFIG_REQUEST);
+    destroyConfigRequest(unpackedPacket);
+    return errCount;
+}
+
 int main()
 {
     // Run tests on both types of list
@@ -498,6 +607,16 @@ int main()
 
     printf("Starting Test05!\n");
     error = t05_testStateResponseUnpacking();
+    if(error == 0 ) {
+        printf("success!\n");
+    }
+    else {
+        printf("^^^ test errors\n");
+    }
+    allErrors += error;
+
+    printf("Starting Test06!\n");
+    error = t06_testConfigRequestUnpacking();
     if(error == 0 ) {
         printf("success!\n");
     }
