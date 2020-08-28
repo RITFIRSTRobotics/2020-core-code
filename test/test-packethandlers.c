@@ -12,8 +12,7 @@
 #include "../utils/dbgprint.h"
 #include "../collections/arraylist.h"
 #include "../collections/list.h"
-
-#define MIN(x,y) (x<y?x:y)
+#include "../utils/bounds.h"
 
 static const uint8_t INIT_DATA[] = {
         0x55, 0xAA, 0x55, 0xAA
@@ -546,7 +545,7 @@ int t06_testConfigRequestUnpacking()
         errCount++;
     }
     //Check the contents of the keys list
-    for(unsigned int i = 0; i < MIN(list_size(unpackedData->keys), numConfigKeys); i++)
+    for(unsigned int i = 0; i < min(list_size(unpackedData->keys), numConfigKeys); i++)
     {
         if(strcmp(list_get(unpackedData->keys,i), CONFIG_KEYS[i]) != 0)
         {
