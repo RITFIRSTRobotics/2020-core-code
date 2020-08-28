@@ -127,14 +127,18 @@ static List_t* getStringsFromArbitraryData(char* rawList, size_t rawLen)
 {
     ArrayList_t* strings = arraylist_init();
     char* currentString = rawList;
+    //While the packet length says there's still data to process
     while(currentString < rawList + rawLen)
     {
         size_t len = strlen(currentString);
-        //String length plus nul terminator
-        char* str = malloc(sizeof(char) * (len + 1));
-        strcpy(str, currentString);
-        arraylist_add(strings, str);
-        //String length plus nul terminator
+        //Only copy the string if it isn't empty
+        if(len > 0) {
+            //String length plus nul terminator
+            char *str = malloc(sizeof(char) * (len + 1));
+            strcpy(str, currentString);
+            arraylist_add(strings, str);
+        }
+        //Move the pointer we're currently processing to the next string
         currentString += len + 1;
     }
     return (List_t*) strings;
@@ -517,6 +521,10 @@ void destroyConfigRequest(PacketTLV_t* configRequestPacket)
     if(configRequestPacket->type == pt_CONFIG_REQUEST)
     {
         PTLVData_CONFIG_REQUEST_t* data = (PTLVData_CONFIG_REQUEST_t*)configRequestPacket->data;
+        for (unsigned int i = 0; i < list_size(data->keys); i++)
+        {
+            free(list_get(data->keys, i));
+        }
         list_free(data->keys);
         data->keys = NULL;
         //We're guaranteed to free this later
