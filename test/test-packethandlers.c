@@ -13,6 +13,7 @@
 #include "../collections/arraylist.h"
 #include "../collections/list.h"
 #include "../utils/bounds.h"
+#include "../network/netutils.h"
 
 static const uint8_t INIT_DATA[] = {
         0x55, 0xAA, 0x55, 0xAA
@@ -200,6 +201,7 @@ void setup(PacketType_t setupType)
             arraylist_add((ArrayList_t*)knownGoodConfigRequest.keys, key2);
             break;
         case pt_CONFIG_RESPONSE:
+            //TODO use KVPairTLV_t create and destroy methods to ensure CString datatypes are appropriately handled.
             configResponsePacket = malloc(sizeof(IntermediateTLV_t));
             configResponsePacket->type = pt_CONFIG_RESPONSE;
             configResponsePacket->length = sizeof(CONFIG_RESPONSE_DATA);
@@ -274,21 +276,11 @@ void teardown(PacketType_t setupType)
             arraylist_free((ArrayList_t*)knownGoodConfigRequest.keys);
             break;
         case pt_CONFIG_RESPONSE:
-            configResponsePacket = malloc(sizeof(IntermediateTLV_t));
-            //Get the tlv out of the list
-            KVPairTLV_t* tlv0 = list_get(knownGoodConfigResponse.pairs,0);
-            //Free the key
-            free(tlv0->key);
-            //free the pair
-            free(tlv0);
-            KVPairTLV_t* tlv1 = list_get(knownGoodConfigResponse.pairs,1);
-            free(tlv1->key);
-            free(tlv1);
-            //TLV 2 has a dynamic memory pointer in the value field
-            KVPairTLV_t* tlv2 = list_get(knownGoodConfigResponse.pairs,2);
-            free(tlv2->key);
-            free(tlv2->value);
-            free(tlv2);
+            //Free all the known-good TLVs
+            for(unsigned int i = 0; i < list_size(knownGoodConfigResponse.pairs); i++)
+            {
+                KVPairTLV_destroy(list_get(knownGoodConfigResponse.pairs, i));
+            }
 
             list_free(knownGoodConfigResponse.pairs);
             break;
