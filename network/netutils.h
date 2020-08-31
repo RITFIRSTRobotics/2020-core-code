@@ -12,7 +12,7 @@
 #include "packet.h"
 
 // allow C++ to parse this
-#ifndef __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif //__cplusplus
     /**
@@ -36,7 +36,7 @@ extern "C" {
      */
     void KVPairTLV_destroy(KVPairTLV_t* pairToDestroy);
 
-#ifndef __cplusplus
+#ifdef __cplusplus
 }
 #endif //__cplusplus
 
