@@ -343,7 +343,7 @@ PacketTLV_t* unpackConfigResponse(IntermediateTLV_t* rawPacket)
     packet->timestamp = rawPacket->timestamp;
     packet->length = rawPacket->length;
     packet->data = (PTLVData_Base_t*)unpacked;
-    unpacked->pairs = getStringsFromArbitraryData((char*)rawPacket->data, rawPacket->length);
+    unpacked->pairs = parseKVList((char*)rawPacket->data, rawPacket->length);
 
     llnet_packet_free(rawPacket);
     return packet;
