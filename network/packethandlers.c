@@ -77,7 +77,8 @@ static List_t* parseKVList(char* rawList, size_t kvListLen)
         //The type is the first byte after the nul terminator
         KVPair_Type_t type = kvString[keyLen + 1];
         //The length is in the next 3 bytes
-        size_t valueLength = kvString[keyLen+2] << 16 | kvString[keyLen+3] << 8 | kvString[keyLen+4];
+        //Since length is the total length of the TLV structure, subtract the lenght of the header
+        size_t valueLength = (kvString[keyLen+2] << 16 | kvString[keyLen+3] << 8 | kvString[keyLen+4]) - 4;
         //Copy the value into memory we control
         void* value = malloc(valueLength);
         if(value != NULL)
