@@ -7,6 +7,7 @@
 #include <string.h>
 #include "packethandlers.h"
 #include "../collections/arraylist.h"
+#include "netutils.h"
 
 /**
  * Creates a PacketTLV_t* from a ll packet.
@@ -47,6 +48,7 @@ static PacketTLV_t* createBasePacket(IntermediateTLV_t* rawPacket)
 static List_t* parseKVList(char* rawList, size_t kvListLen)
 {
     //TODO consider doing format validation and setting ERRNO appropriately
+    //TODO use KVPairTLV_t create and destroy methods to ensure CString datatypes are appropriately handled.
     ArrayList_t* kvList = arraylist_init();
     if(kvList == NULL)
     {
@@ -65,34 +67,20 @@ static List_t* parseKVList(char* rawList, size_t kvListLen)
             kvString++;
             continue;
         }
-        //Copy the key into memory we control
-        char* key = malloc(sizeof(char) * (keyLen + 1));
-        if(key != NULL)
-        {
-            //memcpy for speed, since we already know string size
-            memcpy(key, kvString, keyLen+1);
-            //Force nul termination
-            key[keyLen] = '\0';
-        }
+        //Point the later create at the key in the bytestream
+        char* key = kvString;
         //The type is the first byte after the nul terminator
         KVPair_Type_t type = kvString[keyLen + 1];
         //The length is in the next 3 bytes
         //Since length is the total length of the TLV structure, subtract the lenght of the header
         size_t valueLength = (kvString[keyLen+2] << 16 | kvString[keyLen+3] << 8 | kvString[keyLen+4]) - 4;
-        //Copy the value into memory we control
-        void* value = malloc(valueLength);
-        if(value != NULL)
-        {
-            memcpy(value, kvString + keyLen + 5, valueLength);
-        }
+        //Print the create function at the start of the value
+        void* value = kvString + keyLen + 5;
         //Store the K-TLV structure
-        KVPairTLV_t* thisPair = malloc(sizeof(KVPairTLV_t));
-        if(thisPair != NULL && value != NULL && key != NULL)
+        KVPairTLV_t* thisPair = NULL;
+        if(value != NULL && key != NULL)
         {
-            thisPair->key = key;
-            thisPair->type = type;
-            thisPair->length = valueLength;
-            thisPair->value = value;
+            thisPair = KVPairTLV_create(key, type, value);
             //Add the structure to the list
             arraylist_add(kvList, thisPair);
         }
@@ -102,10 +90,6 @@ static List_t* parseKVList(char* rawList, size_t kvListLen)
             //Clean up the memory we have successfully allocated
             if(thisPair)
                 free(thisPair);
-            if(value)
-                free(value);
-            if(key)
-                free(key);
         }
         //Increment the pointer to the next K-TLV
         //the length of the key + nul terminator + type + length + value + semicolon
@@ -547,6 +531,11 @@ void destroyConfigResponse(PacketTLV_t* configResponsePacket)
     if(configResponsePacket->type == pt_CONFIG_RESPONSE)
     {
         PTLVData_CONFIG_RESPONSE_t* data = (PTLVData_CONFIG_RESPONSE_t*)configResponsePacket->data;
+        //Free all of the KV pairs
+        for(unsigned int i = 0; i < list_size(data->pairs); i++)
+        {
+            KVPairTLV_destroy(list_get(data->pairs, i));
+        }
         list_free(data->pairs);
         data->pairs = NULL;
         //We're guaranteed to free this later
