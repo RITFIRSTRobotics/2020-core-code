@@ -48,53 +48,37 @@ static PacketTLV_t* createBasePacket(IntermediateTLV_t* rawPacket)
 static List_t* parseKVList(char* rawList, size_t kvListLen)
 {
     //TODO consider doing format validation and setting ERRNO appropriately
-    //TODO use KVPairTLV_t create and destroy methods to ensure CString datatypes are appropriately handled.
     ArrayList_t* kvList = arraylist_init();
+    //Failure in list creation
     if(kvList == NULL)
     {
         return NULL;
     }
+    KVPairTLV_t* pair = NULL;
     char* kvString = rawList;
-    //While we haven't hit the end of the list
-    while(kvString < (rawList + kvListLen))
+    //While we still have things to parse
+    do
     {
-        //Get the length of the key
-        size_t keyLen = strlen(kvString);
-        //We've found a nul byte at the beginning of a string for some reason, probably because of padding
-        //Check the next byte until we hit the end of the raw buffer
-        if(keyLen == 0)
+        pair = KVPairTLV_createFromMemory(kvString, &kvString);
+        //Critical Failure! Or we ran into padding.
+        if(pair == NULL)
         {
-            kvString++;
-            continue;
+            //We ran into padding, break out of the parsing loop.
+            if(kvString == NULL)
+                break;
+            //Actual critical failure
+            //TODO should probably log this
+            for(unsigned int i = 0; i < arraylist_size(kvList); i++)
+            {
+                KVPairTLV_destroy(arraylist_get(kvList, i));
+            }
+            arraylist_free(kvList);
+            return NULL;
         }
-        //Point the later create at the key in the bytestream
-        char* key = kvString;
-        //The type is the first byte after the nul terminator
-        KVPair_Type_t type = kvString[keyLen + 1];
-        //The length is in the next 3 bytes
-        //Since length is the total length of the TLV structure, subtract the lenght of the header
-        size_t valueLength = (kvString[keyLen+2] << 16 | kvString[keyLen+3] << 8 | kvString[keyLen+4]) - 4;
-        //Print the create function at the start of the value
-        void* value = kvString + keyLen + 5;
-        //Store the K-TLV structure
-        KVPairTLV_t* thisPair = NULL;
-        if(value != NULL && key != NULL)
-        {
-            thisPair = KVPairTLV_create(key, type, value);
-            //Add the structure to the list
-            arraylist_add(kvList, thisPair);
-        }
-        //There was a failure somewhere
-        else
-        {
-            //Clean up the memory we have successfully allocated
-            if(thisPair)
-                free(thisPair);
-        }
-        //Increment the pointer to the next K-TLV
-        //the length of the key + nul terminator + type + length + value + semicolon
-        kvString +=keyLen+1+1+3+valueLength+1;
-    }
+        arraylist_add(kvList, pair);
+        //Jump over the semicolon delimiter.
+        kvString++;
+    } while(kvString != NULL && kvString < rawList + kvListLen);
     return (List_t*)kvList;
 }
 
