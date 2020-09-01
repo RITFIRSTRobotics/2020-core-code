@@ -103,8 +103,9 @@ static const uint8_t CONFIG_RESPONSE_DATA[] = {
         0x5F, 0x6B, 0x65, 0x79,
         0x00,
         //Integer value 0x55 and seperator
-        0x00, 0x00, 0x00, 0x05,
-        0x55, 0x3B,
+        0x00, 0x00, 0x00, 0x08,
+        0x55, 0x00, 0x00, 0x55,
+        0x3B,
         //"test_key2"
         0x74, 0x65, 0x73, 0x74,
         0x5F, 0x6B, 0x65, 0x79,
@@ -122,8 +123,8 @@ static const uint8_t CONFIG_RESPONSE_DATA[] = {
         0x6F, 0x2C, 0x20, 0x77,
         0x6F, 0x72, 0x6C, 0x64,
         0x00,
-        //2 bytes padding required
-        0x00, 0x00
+        //3 bytes padding required
+        0x00, 0x00, 0x00
 };
 //This type holds a List_t for the keys response, this is populated in setup
 static PTLVData_CONFIG_RESPONSE_t knownGoodConfigResponse = {
@@ -221,17 +222,18 @@ void setup(PacketType_t setupType)
             tlv0->key = key0;
             tlv1->key = key1;
             tlv2->key = key2;
-            tlv0->length = 5;
+            tlv0->length = 8;
             tlv1->length = 5;
             tlv2->length = 17;
             tlv0->type = kv_Integer;
             tlv1->type = kv_Boolean;
             tlv2->type = kv_CString;
-            tlv0->value = (void*)0x55;
-            tlv1->value = (void*)0x00;
+            //Stupid BE/LE difference, making me test symmetric numbers
+            tlv0->value.Integer = 0x55000055;
+            tlv1->value.Boolean = 0x00;
             //Length of string "Hello, world" + nul terminator
-            tlv2->value = (char*)malloc(13);
-            strcpy(tlv2->value, "Hello, world");
+            tlv2->value.CString = (char*)malloc(13);
+            strcpy(tlv2->value.CString, "Hello, world");
             list_add(knownGoodConfigResponse.pairs, tlv0);
             list_add(knownGoodConfigResponse.pairs, tlv1);
             list_add(knownGoodConfigResponse.pairs, tlv2);
@@ -671,23 +673,32 @@ int t07_testConfigResponseUnpacking()
     PTLVData_CONFIG_RESPONSE_t* unpackedData = (PTLVData_CONFIG_RESPONSE_t*)unpackedPacket->data;
     if(unpackedData->pairs == NULL)
     {
-        dbg_error("unpackConfigResponse did not unpack the config value list");
+        dbg_error("unpackConfigResponse did not unpack the config value list\n");
         errCount++;
     }
     //Check that the correct number of keys were unpacked
     if(list_size(unpackedData->pairs) != numConfigKeys)
     {
-        dbg_error("unpackConfigResponse did not unpack the correct number of values");
-        printf("%ud != %ud\n", list_size(unpackedData->pairs), numConfigKeys);
+        dbg_error("unpackConfigResponse did not unpack the correct number of values\n");
+        printf("%u != %u\n", list_size(unpackedData->pairs), numConfigKeys);
         errCount++;
     }
     //Check the contents of the keys list
+    KVPairTLV_t* testPair = NULL;
+    KVPairTLV_t* knownGoodPair = NULL;
     for(unsigned int i = 0; i < min(list_size(unpackedData->pairs), numConfigKeys); i++)
     {
-        if(strcmp(((KVPairTLV_t*)(list_get(unpackedData->pairs, i)))->key, CONFIG_KEYS[i]) != 0)
+        testPair = (KVPairTLV_t*)(list_get(unpackedData->pairs, i));
+        knownGoodPair = (KVPairTLV_t*)(list_get(knownGoodConfigResponse.pairs, i));
+        if(strcmp(testPair->key, CONFIG_KEYS[i]) != 0)
         {
-            dbg_error("unpackConfigResponse did not correctly unpack the request keys");
-            printf("%s != %s\n", (char*)(((KVPairTLV_t*)(list_get(unpackedData->pairs, i)))->key), CONFIG_KEYS[i]);
+            dbg_error("unpackConfigResponse did not correctly unpack the request keys\n");
+            printf("%s != %s\n", testPair->key, CONFIG_KEYS[i]);
+            errCount++;
+        }
+        if(!KVPairTLV_equals(testPair, knownGoodPair))
+        {
+            dbg_error("unpackConfigResponse did not correctly unpack the request KVPairs\n");
             errCount++;
         }
     }
