@@ -244,8 +244,8 @@ static void* _llnet_listener_udp(void* _targs) {
 
         // Save the rest of the data
         tlv->data = malloc(tlv->length);
-        uint32_t l = tlv->length; // trick gcc that this isn't a bit-field
-        memcpy(tlv->data, (buf + LLNET_HEADER_LENGTH), min(l, nread - LLNET_HEADER_LENGTH));
+        uint32_t t = tlv->length; // trick gcc that this isn't a bit-field
+        memcpy(tlv->data, (buf + LLNET_HEADER_LENGTH), min(t, (uint32_t) (nread - LLNET_HEADER_LENGTH)));
 
         // Call the handler
         worker->on_packet(worker->connection_id, tlv);

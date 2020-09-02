@@ -34,7 +34,7 @@ $(TEST_OBJ_DIR)/test-llnet.o: $(TEST_DIR)/test-llnet.c $(TEST_DIR)/test-utils.h
 test-llnet: $(OBJ_DIR)/lowlevel.o $(TEST_OBJ_DIR)/test-llnet.o $(OBJ_DIR)/arraylist.o
 	$(CC) -o $(TEST_OBJ_DIR)/test-llnet $^ $(LD_FLAGS)
 	@echo "!!!!!!!! starting testing"
-	@valgrind --leak-check=full --error-exitcode=1 --suppressions=llnet.valgrind.supp $(TEST_OBJ_DIR)/test-llnet
+	@valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 --suppressions=llnet.valgrind.supp $(TEST_OBJ_DIR)/test-llnet
 	@$(TEST_OBJ_DIR)/test-llnet
 
 ### CI testing recipes
