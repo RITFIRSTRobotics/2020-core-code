@@ -132,12 +132,49 @@ static PTLVData_CONFIG_RESPONSE_t knownGoodConfigResponse = {
 };
 static IntermediateTLV_t* configResponsePacket = NULL;
 
+static const uint8_t CONFIG_UPDATE_DATA[] = {
+        //"test_key"
+        0x74, 0x65, 0x73, 0x74,
+        0x5F, 0x6B, 0x65, 0x79,
+        0x00,
+        //Integer value 0x55 and seperator
+        0x00, 0x00, 0x00, 0x08,
+        0x55, 0x00, 0x00, 0x55,
+        0x3B,
+        //"test_key2"
+        0x74, 0x65, 0x73, 0x74,
+        0x5F, 0x6B, 0x65, 0x79,
+        0x32, 0x00,
+        //boolean value False, and seperator
+        0x04, 0x00, 0x00, 0x05,
+        0x00, 0x3B,
+        //"test_key3"
+        0x74, 0x65, 0x73, 0x74,
+        0x5F, 0x6B, 0x65, 0x79,
+        0x33, 0x00,
+        //C-string "Hello, world"
+        0x03, 0x00, 0x00, 0x11,
+        0x48, 0x65, 0x6C, 0x6C,
+        0x6F, 0x2C, 0x20, 0x77,
+        0x6F, 0x72, 0x6C, 0x64,
+        0x00,
+        //3 bytes padding required
+        0x00, 0x00, 0x00
+};
+//This type holds a List_t for the keys response, this is populated in setup
+static PTLVData_CONFIG_UPDATE_t knownGoodConfigUpdate = {
+        NULL
+};
+static IntermediateTLV_t* configUpdatePacket = NULL;
 
 void setup(PacketType_t setupType)
 {
     char* key0;
     char* key1;
     char* key2;
+    KVPairTLV_t* tlv0;
+    KVPairTLV_t* tlv1;
+    KVPairTLV_t* tlv2;
     switch(setupType)
     {
         case pt_INIT:
@@ -216,9 +253,9 @@ void setup(PacketType_t setupType)
             strcpy(key1, CONFIG_KEYS[1]);
             key2 = (char*)malloc(strlen(CONFIG_KEYS[2]) + 1);
             strcpy(key2, CONFIG_KEYS[2]);
-            KVPairTLV_t* tlv0 = malloc(sizeof(KVPairTLV_t));
-            KVPairTLV_t* tlv1 = malloc(sizeof(KVPairTLV_t));
-            KVPairTLV_t* tlv2 = malloc(sizeof(KVPairTLV_t));
+            tlv0 = malloc(sizeof(KVPairTLV_t));
+            tlv1 = malloc(sizeof(KVPairTLV_t));
+            tlv2 = malloc(sizeof(KVPairTLV_t));
             tlv0->key = key0;
             tlv1->key = key1;
             tlv2->key = key2;
@@ -239,7 +276,41 @@ void setup(PacketType_t setupType)
             list_add(knownGoodConfigResponse.pairs, tlv2);
             break;
         case pt_CONFIG_UPDATE:
-
+            //TODO use KVPairTLV_t create and destroy methods to ensure CString datatypes are appropriately handled.
+            configUpdatePacket = malloc(sizeof(IntermediateTLV_t));
+            configUpdatePacket->type = pt_CONFIG_UPDATE;
+            configUpdatePacket->length = sizeof(CONFIG_UPDATE_DATA);
+            configUpdatePacket->timestamp = 0xAAAAAAAA;
+            configUpdatePacket->data = malloc(sizeof(CONFIG_UPDATE_DATA));
+            memcpy(configUpdatePacket->data, CONFIG_UPDATE_DATA, sizeof(CONFIG_UPDATE_DATA));
+            knownGoodConfigUpdate.new_pairs = (List_t*)arraylist_init_len(3);
+            key0 = (char*)malloc(strlen(CONFIG_KEYS[0]) + 1);
+            strcpy(key0, CONFIG_KEYS[0]);
+            key1 = (char*)malloc(strlen(CONFIG_KEYS[1])+ 1);
+            strcpy(key1, CONFIG_KEYS[1]);
+            key2 = (char*)malloc(strlen(CONFIG_KEYS[2]) + 1);
+            strcpy(key2, CONFIG_KEYS[2]);
+            tlv0 = malloc(sizeof(KVPairTLV_t));
+            tlv1 = malloc(sizeof(KVPairTLV_t));
+            tlv2 = malloc(sizeof(KVPairTLV_t));
+            tlv0->key = key0;
+            tlv1->key = key1;
+            tlv2->key = key2;
+            tlv0->length = 8;
+            tlv1->length = 5;
+            tlv2->length = 17;
+            tlv0->type = kv_Integer;
+            tlv1->type = kv_Boolean;
+            tlv2->type = kv_CString;
+            //Stupid BE/LE difference, making me test symmetric numbers
+            tlv0->value.Integer = 0x55000055;
+            tlv1->value.Boolean = 0x00;
+            //Length of string "Hello, world" + nul terminator
+            tlv2->value.CString = (char*)malloc(13);
+            strcpy(tlv2->value.CString, "Hello, world");
+            list_add(knownGoodConfigUpdate.new_pairs, tlv0);
+            list_add(knownGoodConfigUpdate.new_pairs, tlv1);
+            list_add(knownGoodConfigUpdate.new_pairs, tlv2);
             break;
         case pt_DEBUG:
 
@@ -285,6 +356,14 @@ void teardown(PacketType_t setupType)
             }
 
             list_free(knownGoodConfigResponse.pairs);
+            break;
+        case pt_CONFIG_UPDATE:
+            //Free all the known-good TLVs
+            for(unsigned int i = 0; i < list_size(knownGoodConfigUpdate.new_pairs); i++)
+            {
+                KVPairTLV_destroy(list_get(knownGoodConfigUpdate.new_pairs, i));
+            }
+            list_free(knownGoodConfigUpdate.new_pairs);
             break;
     }
 }
@@ -707,6 +786,72 @@ int t07_testConfigResponseUnpacking()
     return errCount;
 }
 
+int t08_testConfigUpdateUnpacking()
+{
+    setup(pt_CONFIG_UPDATE);
+    int errCount = 0;
+    PacketTLV_t *unpackedPacket = unpackConfigUpdate(configUpdatePacket);
+    //Something failed in the function.  They system is probably out of memory
+    if (unpackedPacket == NULL) {
+        dbg_error("unpackConfigUpdate returned NULL!\n")
+        errCount++;
+    }
+
+    //Check if the type was stored correctly
+    if (unpackedPacket->type != pt_CONFIG_UPDATE) {
+        dbg_error("unpackConfigUpdate returned incorrect packetType!\n");
+        errCount++;
+    }
+
+    //Check if the timestamp was stored correctly
+    if (unpackedPacket->timestamp != 0xAAAAAAAA) {
+        dbg_error("unpackConfigUpdate returned incorrect timestamp!\n");
+        errCount++;
+    }
+
+    //Check if the length was stored correctly
+    if (unpackedPacket->length != sizeof(CONFIG_UPDATE_DATA)) {
+        dbg_error("unpackConfigUpdate returned incorrect length!\n");
+        errCount++;
+    }
+
+    //Check that the keys were unpacked
+    PTLVData_CONFIG_UPDATE_t* unpackedData = (PTLVData_CONFIG_UPDATE_t*)unpackedPacket->data;
+    if(unpackedData->new_pairs == NULL)
+    {
+        dbg_error("unpackConfigUpdate did not unpack the config value list\n");
+        errCount++;
+    }
+    //Check that the correct number of keys were unpacked
+    if(list_size(unpackedData->new_pairs) != numConfigKeys)
+    {
+        dbg_error("unpackConfigUpdate did not unpack the correct number of values\n");
+        printf("%u != %u\n", list_size(unpackedData->new_pairs), numConfigKeys);
+        errCount++;
+    }
+    //Check the contents of the keys list
+    KVPairTLV_t* testPair = NULL;
+    KVPairTLV_t* knownGoodPair = NULL;
+    for(unsigned int i = 0; i < min(list_size(unpackedData->new_pairs), numConfigKeys); i++)
+    {
+        testPair = (KVPairTLV_t*)(list_get(unpackedData->new_pairs, i));
+        knownGoodPair = (KVPairTLV_t*)(list_get(knownGoodConfigUpdate.new_pairs, i));
+        if(strcmp(testPair->key, CONFIG_KEYS[i]) != 0)
+        {
+            dbg_error("unpackConfigUpdate did not correctly unpack the request keys\n");
+            printf("%s != %s\n", testPair->key, CONFIG_KEYS[i]);
+            errCount++;
+        }
+        if(!KVPairTLV_equals(testPair, knownGoodPair))
+        {
+            dbg_error("unpackConfigUpdate did not correctly unpack the request KVPairs\n");
+            errCount++;
+        }
+    }
+    teardown(pt_CONFIG_UPDATE);
+    destroyConfigUpdate(unpackedPacket);
+    return errCount;
+}
 int main()
 {
     // Run tests on both types of list
@@ -774,6 +919,16 @@ int main()
 
     printf("Starting Test07!\n");
     error = t07_testConfigResponseUnpacking();
+    if(error == 0 ) {
+        printf("success!\n");
+    }
+    else {
+        printf("^^^ test errors\n");
+    }
+    allErrors += error;
+
+    printf("Starting Test08!\n");
+    error = t08_testConfigUpdateUnpacking();
     if(error == 0 ) {
         printf("success!\n");
     }
