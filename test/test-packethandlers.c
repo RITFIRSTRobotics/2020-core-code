@@ -167,6 +167,26 @@ static PTLVData_CONFIG_UPDATE_t knownGoodConfigUpdate = {
 };
 static IntermediateTLV_t* configUpdatePacket = NULL;
 
+static const uint8_t DEBUG_DATA[] = {
+    //LE packing of code status and git hash, may cause test to fail on BE computers
+    //TODO put note of possible failure in test output
+    0x41, 0x8e, 0x96, 0x1c,
+    //Robot UUID
+    0x01, 0x02, 0x02, 0x01,
+    //Robot state, rsvd, numConfigEntries (2 bytes)
+    0x02, 0x00, 0xFF, 0xFF,
+    //Arbitrary data
+    0x01, 0x02, 0x03, 0x04,
+    0x04, 0x03, 0x02, 0x01,
+    0xAA, 0x55, 0xAA, 0x55,
+    0xFF, 0x00, 0xFF, 0x00,
+    0x00, 0xFF, 0x00, 0xFF
+};
+static PTLVData_DEBUG_t knownGoodDebug = {
+    NULL
+};
+static IntermediateTLV_t* debugPacket=NULL;
+
 void setup(PacketType_t setupType)
 {
     char* key0;
@@ -313,7 +333,14 @@ void setup(PacketType_t setupType)
             list_add(knownGoodConfigUpdate.new_pairs, tlv2);
             break;
         case pt_DEBUG:
-
+            debugPacket = malloc(sizeof(IntermediateTLV_t));
+            debugPacket->type = pt_DEBUG;
+            debugPacket->length = sizeof(DEBUG_DATA);
+            debugPacket->timestamp = 0xAAAAAAAA;
+            debugPacket->data = malloc(sizeof(DEBUG_DATA));
+            memcpy(debugPacket->data, DEBUG_DATA, sizeof(DEBUG_DATA));
+            knownGoodDebug.arbitrary = malloc(sizeof(DEBUG_DATA) - 12);
+            memcpy(knownGoodDebug.arbitrary, DEBUG_DATA+12, sizeof(DEBUG_DATA) - 12);
             break;
         default:
             break;
@@ -364,6 +391,9 @@ void teardown(PacketType_t setupType)
                 KVPairTLV_destroy(list_get(knownGoodConfigUpdate.new_pairs, i));
             }
             list_free(knownGoodConfigUpdate.new_pairs);
+            break;
+        case pt_DEBUG:
+            free(knownGoodDebug.arbitrary);
             break;
     }
 }
@@ -852,6 +882,64 @@ int t08_testConfigUpdateUnpacking()
     destroyConfigUpdate(unpackedPacket);
     return errCount;
 }
+
+int t09_testDebugUnpacking()
+{
+    setup(pt_DEBUG);
+    int errCount = 0;
+    PacketTLV_t *unpackedPacket = unpackDebug(debugPacket);
+    //Something failed in the function.  They system is probably out of memory
+    if (unpackedPacket == NULL) {
+        dbg_error("unpackDebug returned NULL!\n")
+        errCount++;
+    }
+
+    //Check if the type was stored correctly
+    if (unpackedPacket->type != pt_DEBUG) {
+        dbg_error("unpackDebug returned incorrect packetType!\n");
+        errCount++;
+    }
+
+    //Check if the timestamp was stored correctly
+    if (unpackedPacket->timestamp != 0xAAAAAAAA) {
+        dbg_error("unpackDebug returned incorrect timestamp!\n");
+        errCount++;
+    }
+
+    //Check if the length was stored correctly
+    if (unpackedPacket->length != sizeof(DEBUG_DATA)) {
+        dbg_error("unpackDebug returned incorrect length!\n");
+        errCount++;
+    }
+
+    //Check the arbitrary data
+    PTLVData_DEBUG_t* unpackedData = unpackedPacket->data;
+    uint8_t* arbitraryData = (uint8_t*)unpackedData->arbitrary;
+    //No data was returned
+    if(arbitraryData == NULL)
+    {
+        dbg_error("UnpackDebug did not unpack arbitrary data!");
+        errCount++;
+    }
+    //Check contents of data
+    else
+    {
+        for (int i = 0; i < unpackedPacket->length-12; i++)
+        {
+            if (arbitraryData[i] != ((uint8_t*)(knownGoodDebug.arbitrary))[i])
+            {
+                dbg_error("UnpackDebug incorrectly unpacked arbitrary data\n");
+                printf("%hhu != %hhu\n", arbitraryData[i], ((uint8_t*)(knownGoodDebug.arbitrary))[i]);
+                errCount++;
+                break;
+            }
+        }
+    }
+    teardown(pt_DEBUG);
+    destroyDebug(unpackedPacket);
+    return errCount;
+}
+
 int main()
 {
     // Run tests on both types of list
@@ -936,6 +1024,17 @@ int main()
         printf("^^^ test errors\n");
     }
     allErrors += error;
+
+    printf("Starting Test09!\n");
+    error = t09_testDebugUnpacking();
+    if(error == 0 ) {
+        printf("success!\n");
+    }
+    else {
+        printf("^^^ test errors\n");
+    }
+    allErrors += error;
+
     // Tests finished, handle the error code
     if (allErrors == 0) {
         return EXIT_SUCCESS;
