@@ -416,7 +416,12 @@ PacketTLV_t* unpackDebug(IntermediateTLV_t* rawPacket)
     unpacked->robot_uuid = ((uint32_t*)(rawPacket->data))[1];
     unpacked->state = (RobotState_t)(rawPacket->data[8]);
     unpacked->config_entries = ((uint16_t*)(rawPacket->data))[5];
-    unpacked->arbitrary = (void*)(rawPacket->data + 12);
+    //Size of data - size of well defined part
+    size_t dataSize = rawPacket->length - 12;
+    unpacked->arbitrary = malloc(rawPacket->length - 12);
+    if(unpacked->arbitrary != NULL) {
+        memcpy(unpacked->arbitrary, (uint8_t * )(rawPacket->data) + 12, dataSize);
+    }
 
     llnet_packet_free(rawPacket);
     return packet;
@@ -573,7 +578,7 @@ void destroyUserData(PacketTLV_t* userDataPacket)
 }
 void destroyDebug(PacketTLV_t* debugPacket)
 {
-    if(debugPacket->type == pt_CONFIG_UPDATE)
+    if(debugPacket->type == pt_DEBUG)
     {
         PTLVData_DEBUG_t* debugData = (PTLVData_DEBUG_t*)(debugPacket->data);
         free(debugData->arbitrary);
