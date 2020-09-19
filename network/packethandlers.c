@@ -541,6 +541,10 @@ void destroyConfigUpdate(PacketTLV_t* configUpdatePacket)
     if(configUpdatePacket->type == pt_CONFIG_UPDATE)
     {
         PTLVData_CONFIG_UPDATE_t* data = (PTLVData_CONFIG_UPDATE_t*)configUpdatePacket->data;
+        for(unsigned int i = 0; i < list_size(data->new_pairs); i++)
+        {
+            KVPairTLV_destroy(list_get(data->new_pairs, i));
+        }
         list_free(data->new_pairs);
         data->new_pairs = NULL;
         data = NULL;
