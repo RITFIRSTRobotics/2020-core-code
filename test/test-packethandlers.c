@@ -170,7 +170,7 @@ static IntermediateTLV_t* configUpdatePacket = NULL;
 static const uint8_t DEBUG_DATA[] = {
     //LE packing of code status and git hash, may cause test to fail on BE computers
     //TODO put note of possible failure in test output
-    0x41, 0x8e, 0x96, 0x1c,
+    0x1c, 0x96, 0x8e, 0x41,
     //Robot UUID
     0x01, 0x02, 0x02, 0x01,
     //Robot state, rsvd, numConfigEntries (2 bytes)
@@ -183,7 +183,7 @@ static const uint8_t DEBUG_DATA[] = {
     0x00, 0xFF, 0x00, 0xFF
 };
 static PTLVData_DEBUG_t knownGoodDebug = {
-    NULL
+    0x01,0x0c968e41,0x01020201,0x02, 0x00, 0xFFFF,NULL
 };
 static IntermediateTLV_t* debugPacket=NULL;
 
@@ -912,8 +912,37 @@ int t09_testDebugUnpacking()
         errCount++;
     }
 
-    //Check the arbitrary data
     PTLVData_DEBUG_t* unpackedData = unpackedPacket->data;
+    if(unpackedData->state != knownGoodDebug.state)
+    {
+        dbg_error("unpackDebug returned incorrect state!\n");
+        printf("Note, this could be an artifact of host endianness\n\n");
+        errCount++;
+    }
+    if(unpackedData->commit_hash != knownGoodDebug.commit_hash)
+    {
+        dbg_error("unpackDebug returned incorrect commit hash!\n");
+        printf("%x != %x\n", unpackedData->commit_hash, knownGoodDebug.commit_hash);
+        printf("Note, this could be an artifact of host endianness\n\n");
+        errCount++;
+    }
+    if(unpackedData->robot_uuid != knownGoodDebug.robot_uuid)
+    {
+        dbg_error("unpackDebug returned incorrect robot uuid!\n");
+        fprintf(stderr, "%x != %x\n", unpackedData->robot_uuid, knownGoodDebug.robot_uuid);
+        errCount++;
+    }
+    if(unpackedData->config_entries != knownGoodDebug.config_entries)
+    {
+        dbg_error("unpackDebug returned incorrect number of config entries!\n");
+        errCount++;
+    }
+    if(unpackedData->reserved != knownGoodDebug.reserved)
+    {
+        dbg_warning("UnpackDebug incorrectly unpacked reserved field!\n");
+    }
+
+//Check the arbitrary data
     uint8_t* arbitraryData = (uint8_t*)unpackedData->arbitrary;
     //No data was returned
     if(arbitraryData == NULL)
