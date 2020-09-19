@@ -75,6 +75,9 @@ int mh_init()
 
 void sort_packet(IntermediateTLV_t* packet)
 {
+    //TODO Get packet from ll interface,
+    //Pass IntermediateTLV_t* to the correct unpacker,
+    //Get the unpacked packet and put it in the correct bucket.
     switch(packet->type)
     {
         case pt_INIT:

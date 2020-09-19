@@ -64,12 +64,20 @@ typedef enum KVPair_Type {
     kv_Boolean = 0x04
 } KVPair_Type_t;
 
+typedef union KVPair_Value {
+    int32_t Integer;
+    float Float;
+    double Double;
+    char* CString;
+    int8_t Boolean;
+} KVPair_Value_u;
+
 // Defines a key-value pair TLV for network transmission
 typedef struct KVPairTLV {
     char* key;
     KVPair_Type_t type:8;
     uint32_t length:24;
-    void* value;
+    KVPair_Value_u value;
 } KVPairTLV_t;
 
 // Defines the INIT packet struct, which "extends" the PTLVData_Base struct

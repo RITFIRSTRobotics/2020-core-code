@@ -7,6 +7,7 @@
 #include <string.h>
 #include "packethandlers.h"
 #include "../collections/arraylist.h"
+#include "netutils.h"
 
 /**
  * Creates a PacketTLV_t* from a ll packet.
@@ -48,68 +49,36 @@ static List_t* parseKVList(char* rawList, size_t kvListLen)
 {
     //TODO consider doing format validation and setting ERRNO appropriately
     ArrayList_t* kvList = arraylist_init();
+    //Failure in list creation
     if(kvList == NULL)
     {
         return NULL;
     }
+    KVPairTLV_t* pair = NULL;
     char* kvString = rawList;
-    //While we haven't hit the end of the list
-    while(kvString < (rawList + kvListLen))
+    //While we still have things to parse
+    do
     {
-        //Get the length of the key
-        size_t keyLen = strlen(kvString);
-        //We've found a nul byte at the beginning of a string for some reason, probably because of padding
-        //Check the next byte until we hit the end of the raw buffer
-        if(keyLen == 0)
+        pair = KVPairTLV_createFromMemory(kvString, &kvString);
+        //Critical Failure! Or we ran into padding.
+        if(pair == NULL)
         {
-            kvString++;
-            continue;
+            //We ran into padding, break out of the parsing loop.
+            if(kvString == NULL)
+                break;
+            //Actual critical failure
+            //TODO should probably log this
+            for(unsigned int i = 0; i < arraylist_size(kvList); i++)
+            {
+                KVPairTLV_destroy(arraylist_get(kvList, i));
+            }
+            arraylist_free(kvList);
+            return NULL;
         }
-        //Copy the key into memory we control
-        char* key = malloc(sizeof(char) * (keyLen + 1));
-        if(key != NULL)
-        {
-            //memcpy for speed, since we already know string size
-            memcpy(key, kvString, keyLen+1);
-            //Force nul termination
-            key[keyLen] = '\0';
-        }
-        //The type is the first byte after the nul terminator
-        KVPair_Type_t type = kvString[keyLen + 1];
-        //The length is in the next 3 bytes
-        size_t valueLength = kvString[keyLen+2] << 16 | kvString[keyLen+3] << 8 | kvString[keyLen+4];
-        //Copy the value into memory we control
-        void* value = malloc(valueLength);
-        if(value != NULL)
-        {
-            memcpy(value, kvString + keyLen + 5, valueLength);
-        }
-        //Store the K-TLV structure
-        KVPairTLV_t* thisPair = malloc(sizeof(KVPairTLV_t));
-        if(thisPair != NULL && value != NULL && key != NULL)
-        {
-            thisPair->key = key;
-            thisPair->type = type;
-            thisPair->length = valueLength;
-            thisPair->value = value;
-            //Add the structure to the list
-            arraylist_add(kvList, thisPair);
-        }
-        //There was a failure somewhere
-        else
-        {
-            //Clean up the memory we have successfully allocated
-            if(thisPair)
-                free(thisPair);
-            if(value)
-                free(value);
-            if(key)
-                free(key);
-        }
-        //Increment the pointer to the next K-TLV
-        //the length of the key + nul terminator + type + length + value + semicolon
-        kvString +=keyLen+1+1+3+valueLength+1;
-    }
+        arraylist_add(kvList, pair);
+        //Jump over the semicolon delimiter.
+        kvString++;
+    } while(kvString != NULL && kvString < rawList + kvListLen);
     return (List_t*)kvList;
 }
 
@@ -127,14 +96,18 @@ static List_t* getStringsFromArbitraryData(char* rawList, size_t rawLen)
 {
     ArrayList_t* strings = arraylist_init();
     char* currentString = rawList;
+    //While the packet length says there's still data to process
     while(currentString < rawList + rawLen)
     {
         size_t len = strlen(currentString);
-        //String length plus nul terminator
-        char* str = malloc(sizeof(char) * (len + 1));
-        strcpy(str, currentString);
-        arraylist_add(strings, str);
-        //String length plus nul terminator
+        //Only copy the string if it isn't empty
+        if(len > 0) {
+            //String length plus nul terminator
+            char *str = malloc(sizeof(char) * (len + 1));
+            strcpy(str, currentString);
+            arraylist_add(strings, str);
+        }
+        //Move the pointer we're currently processing to the next string
         currentString += len + 1;
     }
     return (List_t*) strings;
@@ -339,7 +312,7 @@ PacketTLV_t* unpackConfigResponse(IntermediateTLV_t* rawPacket)
     packet->timestamp = rawPacket->timestamp;
     packet->length = rawPacket->length;
     packet->data = (PTLVData_Base_t*)unpacked;
-    unpacked->pairs = getStringsFromArbitraryData((char*)rawPacket->data, rawPacket->length);
+    unpacked->pairs = parseKVList((char*)rawPacket->data, rawPacket->length);
 
     llnet_packet_free(rawPacket);
     return packet;
@@ -517,6 +490,10 @@ void destroyConfigRequest(PacketTLV_t* configRequestPacket)
     if(configRequestPacket->type == pt_CONFIG_REQUEST)
     {
         PTLVData_CONFIG_REQUEST_t* data = (PTLVData_CONFIG_REQUEST_t*)configRequestPacket->data;
+        for (unsigned int i = 0; i < list_size(data->keys); i++)
+        {
+            free(list_get(data->keys, i));
+        }
         list_free(data->keys);
         data->keys = NULL;
         //We're guaranteed to free this later
@@ -538,6 +515,11 @@ void destroyConfigResponse(PacketTLV_t* configResponsePacket)
     if(configResponsePacket->type == pt_CONFIG_RESPONSE)
     {
         PTLVData_CONFIG_RESPONSE_t* data = (PTLVData_CONFIG_RESPONSE_t*)configResponsePacket->data;
+        //Free all of the KV pairs
+        for(unsigned int i = 0; i < list_size(data->pairs); i++)
+        {
+            KVPairTLV_destroy(list_get(data->pairs, i));
+        }
         list_free(data->pairs);
         data->pairs = NULL;
         //We're guaranteed to free this later
