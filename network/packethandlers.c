@@ -411,8 +411,8 @@ PacketTLV_t* unpackDebug(IntermediateTLV_t* rawPacket)
 
     packet->data = (PTLVData_Base_t*)unpacked;
 
-    unpacked->code_status = rawPacket->data[0];
-    unpacked->commit_hash = rawPacket->data[1] << 16| rawPacket->data[2] << 8 | rawPacket->data[3];
+    unpacked->code_status = (rawPacket->data[0] & 0xF0) >> 4;
+    unpacked->commit_hash = (rawPacket->data[0] & 0x0F) << 24 | rawPacket->data[1] << 16| rawPacket->data[2] << 8 | rawPacket->data[3];
     unpacked->robot_uuid = ((uint32_t*)(rawPacket->data))[1];
     unpacked->state = (RobotState_t)(rawPacket->data[8]);
     unpacked->config_entries = ((uint16_t*)(rawPacket->data))[5];
