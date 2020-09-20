@@ -107,6 +107,7 @@ bool KVPairTLV_equals(KVPairTLV_t* kv1, KVPairTLV_t* kv2)
             return kv1->value.Boolean == kv2->value.Boolean;
             break;
     }
+    return true;
 }
 
 ///Free the memory used by a KVPairTLV_t*
