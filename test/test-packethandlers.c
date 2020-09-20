@@ -169,7 +169,6 @@ static IntermediateTLV_t* configUpdatePacket = NULL;
 
 static const uint8_t DEBUG_DATA[] = {
     //LE packing of code status and git hash, may cause test to fail on BE computers
-    //TODO put note of possible failure in test output
     0x1c, 0x96, 0x8e, 0x41,
     //Robot UUID
     0x01, 0x02, 0x02, 0x01,
@@ -259,7 +258,6 @@ void setup(PacketType_t setupType)
             arraylist_add((ArrayList_t*)knownGoodConfigRequest.keys, key2);
             break;
         case pt_CONFIG_RESPONSE:
-            //TODO use KVPairTLV_t create and destroy methods to ensure CString datatypes are appropriately handled.
             configResponsePacket = malloc(sizeof(IntermediateTLV_t));
             configResponsePacket->type = pt_CONFIG_RESPONSE;
             configResponsePacket->length = sizeof(CONFIG_RESPONSE_DATA);
@@ -296,7 +294,6 @@ void setup(PacketType_t setupType)
             list_add(knownGoodConfigResponse.pairs, tlv2);
             break;
         case pt_CONFIG_UPDATE:
-            //TODO use KVPairTLV_t create and destroy methods to ensure CString datatypes are appropriately handled.
             configUpdatePacket = malloc(sizeof(IntermediateTLV_t));
             configUpdatePacket->type = pt_CONFIG_UPDATE;
             configUpdatePacket->length = sizeof(CONFIG_UPDATE_DATA);
