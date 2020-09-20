@@ -6,6 +6,7 @@
  * @author Connor Henley, @thatging3rkid
  */
 #ifndef __CORE_COLLECTION_ARRAYLIST
+#define __CORE_COLLECTION_ARRAYLIST
 
 #ifdef __cplusplus
 extern "C" {
