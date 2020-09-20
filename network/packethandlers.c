@@ -277,9 +277,6 @@ PacketTLV_t* unpackConfigRequest(IntermediateTLV_t* rawPacket)
         llnet_packet_free(rawPacket);
         return NULL;
     }
-    packet->type = rawPacket->type;
-    packet->timestamp = rawPacket->timestamp;
-    packet->length = rawPacket->length;
     packet->data = (PTLVData_Base_t*)unpacked;
     unpacked->keys = getStringsFromArbitraryData((char*)rawPacket->data, rawPacket->length);
 
