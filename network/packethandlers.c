@@ -407,17 +407,27 @@ PacketTLV_t* unpackDebug(IntermediateTLV_t* rawPacket)
     }
 
     packet->data = (PTLVData_Base_t*)unpacked;
+    uint8_t* workingPtr = rawPacket->data;
+    unpacked->code_status = (workingPtr[0] & 0xF0) >> 4;
+    unpacked->commit_hash = (workingPtr[0] & 0x0F) << 24 | workingPtr[1] << 16 | workingPtr[2] << 8 | workingPtr[3];
 
-    unpacked->code_status = (rawPacket->data[0] & 0xF0) >> 4;
-    unpacked->commit_hash = (rawPacket->data[0] & 0x0F) << 24 | rawPacket->data[1] << 16| rawPacket->data[2] << 8 | rawPacket->data[3];
-    unpacked->robot_uuid = ((uint32_t*)(rawPacket->data))[1];
-    unpacked->state = (RobotState_t)(rawPacket->data[8]);
-    unpacked->config_entries = ((uint16_t*)(rawPacket->data))[5];
+    //Move the working pointer to the next word
+    workingPtr += 4;
+    unpacked->robot_uuid = *((uint32_t*)(workingPtr));
+
+    //Move the working pointer to the next word
+    workingPtr += 4;
+    unpacked->state = (RobotState_t)(*workingPtr);
+    unpacked->reserved = workingPtr[1];
+    unpacked->config_entries = workingPtr[2] << 8 | workingPtr[3];
+
+    //Move the working pointer to the beginning of the arbitrary data;
+    workingPtr += 4;
     //Size of data - size of well defined part
     size_t dataSize = rawPacket->length - 12;
-    unpacked->arbitrary = malloc(rawPacket->length - 12);
+    unpacked->arbitrary = malloc(dataSize);
     if(unpacked->arbitrary != NULL) {
-        memcpy(unpacked->arbitrary, (uint8_t * )(rawPacket->data) + 12, dataSize);
+        memcpy(unpacked->arbitrary, workingPtr, dataSize);
     }
 
     llnet_packet_free(rawPacket);
