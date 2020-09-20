@@ -53,7 +53,7 @@ KVPairTLV_t* KVPairTLV_createFromMemory(const char* start, char** end);
  * @return
  *  1 if kv1 == kv2, 0 otherwise
  */
-int KVPairTLV_equals(KVPairTLV_t* kv1, KVPairTLV_t* kv2);
+bool KVPairTLV_equals(KVPairTLV_t* kv1, KVPairTLV_t* kv2);
 
 /**
  * Destroy a KVPairTLV*.  If the type is kv_CString, the value field will be free'd.

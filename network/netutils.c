@@ -74,48 +74,39 @@ KVPairTLV_t* KVPairTLV_createFromMemory(const char* start, char** end)
 }
 
 ///Check if two KVPairTLV's are equal
-int KVPairTLV_equals(KVPairTLV_t* kv1, KVPairTLV_t* kv2)
+bool KVPairTLV_equals(KVPairTLV_t* kv1, KVPairTLV_t* kv2)
 {
     //If the metadata isn't equal, it doesn't make sense to check the values
     if(strcmp(kv1->key, kv2->key))
     {
-        return 0;
+        return false;
     }
     if(kv1->type != kv2->type)
     {
-        return 0;
+        return false;
     }
     if(kv1->length != kv2->length)
     {
-        return 0;
+        return false;
     }
     switch(kv1->type)
     {
         case kv_CString:
-            if(strcmp(kv1->value.CString, kv2->value.CString))
-            {
-                return 0;
-            }
+            return !strcmp(kv1->value.CString, kv2->value.CString);
             break;
         case kv_Integer:
-            if(kv1->value.Integer != kv2->value.Integer)
-                return 0;
+            return kv1->value.Integer == kv2->value.Integer;
             break;
         case kv_Double:
-            if(kv1->value.Double != kv2->value.Double)
-                return 0;
+            return kv1->value.Double == kv2->value.Double;
             break;
         case kv_Float:
-            if(kv1->value.Float != kv2->value.Float)
-                return 0;
+            return kv1->value.Float == kv2->value.Float;
             break;
         case kv_Boolean:
-            if(kv1->value.Boolean != kv2->value.Boolean)
-                return 0;
+            return kv1->value.Boolean == kv2->value.Boolean;
             break;
     }
-    //We've passed all our checks
-    return 1;
 }
 
 ///Free the memory used by a KVPairTLV_t*
