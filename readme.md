@@ -19,5 +19,5 @@ git pull origin master
 cd ..
 git add core
 git commit -m "up core to most recent version"
-gitush
+git push
 ```
