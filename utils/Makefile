@@ -45,4 +45,4 @@ ci-test:  ; # do nothing
 ### Cleaning Recipe
 
 clean:
-	-@/bin/rm dbgcommit.gen.h
+	-@/bin/rm -f dbgcommit.gen.h

@@ -392,6 +392,8 @@ void teardown(PacketType_t setupType)
         case pt_DEBUG:
             free(knownGoodDebug.arbitrary);
             break;
+        default:
+            break;
     }
 }
 
@@ -909,7 +911,7 @@ int t09_testDebugUnpacking()
         errCount++;
     }
 
-    PTLVData_DEBUG_t* unpackedData = unpackedPacket->data;
+    PTLVData_DEBUG_t* unpackedData = (PTLVData_DEBUG_t*)(unpackedPacket->data);
     if(unpackedData->state != knownGoodDebug.state)
     {
         dbg_error("unpackDebug returned incorrect state!\n");

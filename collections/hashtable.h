@@ -7,7 +7,17 @@
 
 #include "list.h"
 
-typedef struct HashTable * HashTable_t;
+// Hash table structure
+typedef struct HashTable{
+    void** keys;
+    void** values;
+    size_t size;
+    size_t mem_size;
+    uint32_t (*hash)(void*);
+    int (*key_equals)(void*, void*);
+    int (*value_equals)(void*, void*);
+    float fill_ratio;
+} HashTable_t;
 
 /**
  * Creates a new hashtable with 0 initial size.  The first insert will result in a rehash.
@@ -21,7 +31,7 @@ typedef struct HashTable * HashTable_t;
  * @return
  *  An empty hashtable.
  */
-HashTable_t hashtable_init(uint32_t (*hash)(void*), int (*key_equals)(void*, void*), int (*value_equals)(void*, void*));
+HashTable_t* hashtable_init(uint32_t (*hash)(void*), int (*key_equals)(void*, void*), int (*value_equals)(void*, void*));
 /**
  * Creates a new hashtable with an initial size.
  * @param hash
@@ -35,7 +45,7 @@ HashTable_t hashtable_init(uint32_t (*hash)(void*), int (*key_equals)(void*, voi
  * @return
  *  An empty hashtable with space for \p size entries.
  */
-HashTable_t hashtable_initSize(uint32_t (*hash)(void*), int (*key_equals)(void*, void*), int (*value_equals)(void*, void*), size_t size);
+HashTable_t* hashtable_initSize(uint32_t (*hash)(void*), int (*key_equals)(void*, void*), int (*value_equals)(void*, void*), size_t size);
 
 /**
  * Put a new key-value pair in the hashtable.
@@ -48,7 +58,7 @@ HashTable_t hashtable_initSize(uint32_t (*hash)(void*), int (*key_equals)(void*,
  * @return
  *  Non-zero if the key was successfully inserted.
  */
-int hashtable_put(HashTable_t ht, void* key, void* value);
+int hashtable_put(HashTable_t* ht, void* key, void* value);
 
 /**
  * @param ht
@@ -58,7 +68,7 @@ int hashtable_put(HashTable_t ht, void* key, void* value);
  * @return
  *  The value mapped to \p key or NULL if the key is not present.
  */
-void* hashtable_get(HashTable_t ht, void* key);
+void* hashtable_get(HashTable_t* ht, void* key);
 /**
  * @param ht
  *  The hashable object to get from.
@@ -69,7 +79,7 @@ void* hashtable_get(HashTable_t ht, void* key);
  * @return
  *  The value mapped to \p key or \p defaultValue if the key is not present.
  */
-void* hashtable_getWithDefault(HashTable_t ht, void* key, void* defaultValue);
+void* hashtable_getWithDefault(HashTable_t* ht, void* key, void* defaultValue);
 
 /**
  * Removes a key-value pair from the hashtable.
@@ -80,7 +90,7 @@ void* hashtable_getWithDefault(HashTable_t ht, void* key, void* defaultValue);
  * @return
  *  The removed value if the key was found and removed, NULL otherwise.
  */
-void* hashtable_remove(HashTable_t ht, void* key);
+void* hashtable_remove(HashTable_t* ht, void* key);
 /**
  * Removes a key-value pair from the hashtable if both the key and value match the provided values.
  * Requires that the hash table was initialized with a non-null value-equals function pointer.
@@ -93,7 +103,7 @@ void* hashtable_remove(HashTable_t ht, void* key);
  * @return
  *  The removed value if the key-value pair was found and removed, NULL otherwise.
  */
-void* hashtable_removeIfValue(HashTable_t ht, void* key, void* value);
+void* hashtable_removeIfValue(HashTable_t* ht, void* key, void* value);
 
 /**
  * Replaces the value mapped to a key in the hash table
@@ -106,7 +116,7 @@ void* hashtable_removeIfValue(HashTable_t ht, void* key, void* value);
  * @return
  *  The old value if the key was found and replaced, NULL otherwise.
  */
-void* hashtable_replace(HashTable_t ht, void* key, void* newValue);
+void* hashtable_replace(HashTable_t* ht, void* key, void* newValue);
 /**
  * Replaces the value mapped to a key in the hashtable if both the key and value match the provided values.
  * Requires that the hash table was initialized with a non-null value-equals function pointer.
@@ -121,7 +131,7 @@ void* hashtable_replace(HashTable_t ht, void* key, void* newValue);
  * @return
  *  The old value if the key was found and replaced, NULL otherwise.
  */
-void* hashtable_replaceIfValue(HashTable_t ht, void* key, void* oldValue, void* newValue);
+void* hashtable_replaceIfValue(HashTable_t* ht, void* key, void* oldValue, void* newValue);
 
 /**
  * @param ht
@@ -131,7 +141,7 @@ void* hashtable_replaceIfValue(HashTable_t ht, void* key, void* oldValue, void* 
  * @return
  *  Non-zero if the key is mapped in the hashtable, zero otherwise.
  */
-int hashtable_containsKey(HashTable_t ht, void* key);
+int hashtable_containsKey(HashTable_t* ht, void* key);
 /**
  * Check if the provided value is in the hashtable.
  * Requires that the hash table was initialized with a non-null value-equals function pointer.
@@ -142,7 +152,7 @@ int hashtable_containsKey(HashTable_t ht, void* key);
  * @return
  *  Non-zero if the value is mapped in the hashtable, zero otherwise.
  */
-int hashtable_containsValue(HashTable_t ht, void* value);
+int hashtable_containsValue(HashTable_t* ht, void* value);
 
 /**
  * Checks the number of key-value mappings in the table.  DOES NOT return the amount of slots available in the table.
@@ -151,7 +161,7 @@ int hashtable_containsValue(HashTable_t ht, void* value);
  * @return
  *  The number of key-value mappings in the table.
  */
-size_t hashtable_size(HashTable_t ht);
+size_t hashtable_size(HashTable_t* ht);
 /**
  * Checks if there are no key-value mappings in the table.
  * @param ht
@@ -159,7 +169,7 @@ size_t hashtable_size(HashTable_t ht);
  * @return
  *  Non-zero if there are no key-value mappings in the table.
  */
-int hashtable_isEmpty(HashTable_t ht);
+int hashtable_isEmpty(HashTable_t* ht);
 
 /**
  * @param ht
@@ -167,13 +177,13 @@ int hashtable_isEmpty(HashTable_t ht);
  * @return
  *  A list of all of the keys currently mapped in the hashtable
  */
-List_t* hashtable_getKeys(HashTable_t ht);
+List_t* hashtable_getKeys(HashTable_t* ht);
 
 /**
  * Frees all the memory used by the hashtable. DOES NOT call free on any keys or values in the table.
  * @param ht
  *  The hashtable to destroy.
  */
-void hashtable_destroy(HashTable_t ht);
+void hashtable_destroy(HashTable_t* ht);
 
 #endif //INC_2020_CORE_CODE_HASHTABLE_H

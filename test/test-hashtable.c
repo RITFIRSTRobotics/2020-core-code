@@ -31,7 +31,7 @@ static int value_equals(void* a, void* b)
 
 int t01_initNoValueEquals()
 {
-    HashTable_t ht = hashtable_init(hash, key_equals, NULL);
+    HashTable_t* ht = hashtable_init(hash, key_equals, NULL);
     int result = TEST_SUCCESS;
     if(!hashtable_isEmpty(ht))
     {
@@ -43,7 +43,7 @@ int t01_initNoValueEquals()
 
 int t02_initValueEquals()
 {
-    HashTable_t ht = hashtable_init(hash, key_equals, value_equals);
+    HashTable_t* ht = hashtable_init(hash, key_equals, value_equals);
     int result = TEST_SUCCESS;
     if(!hashtable_isEmpty(ht))
     {
@@ -55,7 +55,7 @@ int t02_initValueEquals()
 
 int t03_initInitialSize()
 {
-    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, 100);
+    HashTable_t* ht = hashtable_initSize(hash, key_equals, value_equals, 100);
     int result = TEST_SUCCESS;
     if(!hashtable_isEmpty(ht))
     {
@@ -73,7 +73,7 @@ int t04_putGetNoInitialSize()
 {
     int result = TEST_SUCCESS;
     void* testVals[MAX_TEST_SIZE];
-    HashTable_t ht = hashtable_init(hash, key_equals, value_equals);
+    HashTable_t* ht = hashtable_init(hash, key_equals, value_equals);
     for(unsigned long i = 1; i < MAX_TEST_SIZE; i++)
     {
         testVals[i] =(void*) i;
@@ -94,7 +94,7 @@ int t05_putGetInitialSizeNoRehash()
 {
     int result = TEST_SUCCESS;
     void* testVals[MAX_TEST_SIZE];
-    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
+    HashTable_t* ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
     for(unsigned long i = 1; i < MAX_TEST_SIZE; i++)
     {
         testVals[i] =(void*) i;
@@ -117,7 +117,7 @@ int t06_putGetWithDefault()
 {
     int result = TEST_SUCCESS;
     void* testvals[MAX_TEST_SIZE];
-    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
+    HashTable_t* ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
     for(unsigned long i = 0; i < MAX_TEST_SIZE; i++)
     {
         testvals[i] =(void*) i;
@@ -151,7 +151,7 @@ int t06_putGetWithDefault()
 int t07_hashtableReturnsFailureOnNullKeyInsert()
 {
     int result = TEST_SUCCESS;
-    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
+    HashTable_t* ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
     int putResult;
     if((putResult = hashtable_put(ht, NULL, NULL)) != 0)
     {
@@ -166,7 +166,7 @@ int t08_remove()
 {
     int result = TEST_SUCCESS;
     void* testvals[MAX_TEST_SIZE];
-    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
+    HashTable_t* ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
     for(unsigned long i = 0; i < MAX_TEST_SIZE; i++)
     {
         testvals[i] =(void*) i;
@@ -196,7 +196,7 @@ int t09_removeIfValue()
 {
     int result = TEST_SUCCESS;
     void* testvals[MAX_TEST_SIZE];
-    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
+    HashTable_t* ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
     for(unsigned long i = 0; i < MAX_TEST_SIZE; i++)
     {
         testvals[i] =(void*) i;
@@ -240,7 +240,7 @@ int t10_replace()
 {
     int result = TEST_SUCCESS;
     void* testvals[MAX_TEST_SIZE];
-    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
+    HashTable_t* ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
     for(unsigned long i = 0; i < MAX_TEST_SIZE; i++)
     {
         testvals[i] =(void*) i;
@@ -269,7 +269,7 @@ int t11_replaceIfValue()
 {
     int result = TEST_SUCCESS;
     void* testvals[MAX_TEST_SIZE];
-    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
+    HashTable_t* ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
     for(unsigned long i = 0; i < MAX_TEST_SIZE; i++)
     {
         testvals[i] =(void*) i;
@@ -312,7 +312,7 @@ int t11_replaceIfValue()
 int t12_checkContainsKey()
 {
     int result = TEST_SUCCESS;
-    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
+    HashTable_t* ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
     //Insert odd keys into the hashtable
     for(unsigned long i = 1; i < MAX_TEST_SIZE * 2; i+=2)
     {
@@ -346,7 +346,7 @@ int t12_checkContainsKey()
 int t13_testContainsValue()
 {
     int result = TEST_SUCCESS;
-    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
+    HashTable_t* ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
     //Insert odd keys into the hashtable
     for(unsigned long i = 1; i < MAX_TEST_SIZE * 2; i+=2)
     {
@@ -381,7 +381,7 @@ int t14_checkKeysList()
 {
     int result = TEST_SUCCESS;
     void* testvals[MAX_TEST_SIZE - 1];
-    HashTable_t ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
+    HashTable_t* ht = hashtable_initSize(hash, key_equals, value_equals, MAX_TEST_SIZE * 2);
     for(unsigned long i = 1; i < MAX_TEST_SIZE; i++)
     {
         testvals[i - 1] =(void*) i;

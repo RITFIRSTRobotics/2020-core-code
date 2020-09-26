@@ -29,6 +29,17 @@ $(OBJ_DIR)/packethandlers.o: packethandlers.c packethandlers.h packet.h lowlevel
 	@mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+### Utility recipes
+
+$(OBJ_DIR)/arraylist.o:
+	make -C ../collections/ $@
+
+$(OBJ_DIR)/list.o:
+	make -C ../collections/ $@
+
+$(OBJ_DIR)/linkedlist.o:
+	make -C ../collections/ $@
+
 ### Testing recipes
 
 $(TEST_OBJ_DIR)/test-llnet.o: $(TEST_DIR)/test-llnet.c $(TEST_DIR)/test-utils.h

@@ -6,16 +6,6 @@
 #include <string.h>
 #include "arraylist.h"
 
-struct HashTable{
-    void** keys;
-    void** values;
-    size_t size;
-    size_t mem_size;
-    uint32_t (*hash)(void*);
-    int (*key_equals)(void*, void*);
-    int (*value_equals)(void*, void*);
-    float fill_ratio;
-};
 
 #include "hashtable.h"
 
@@ -28,7 +18,7 @@ struct HashTable{
  * @return
  *  The index in \p ht's keys array that holds \p key, or -1 if \p key was not found
  */
-static int hashtable_findKeyLocation(HashTable_t ht, void* key)
+static int hashtable_findKeyLocation(HashTable_t* ht, void* key)
 {
     //Hash the key
     uint32_t loc = ht->hash(key);
@@ -66,7 +56,7 @@ static int hashtable_findKeyLocation(HashTable_t ht, void* key)
  * @return
  *  1 if successfully inserted, 0 if the key already exists in the table.
  */
-static int hashtable_insert(HashTable_t ht, void* key, void* value)
+static int hashtable_insert(HashTable_t* ht, void* key, void* value)
 {
     //NULL is not allowed as a key
     if(key == NULL)
@@ -100,7 +90,7 @@ static int hashtable_insert(HashTable_t ht, void* key, void* value)
  * @return
  *  0 on failure, 1 otherwise
  */
-static int hashtable_rehash(HashTable_t ht)
+static int hashtable_rehash(HashTable_t* ht)
 {
     //Store the old keys, values, and memory size to pull from later.
     void** oldKeys = ht->keys;
@@ -134,9 +124,9 @@ static int hashtable_rehash(HashTable_t ht)
 }
 
 ///Create a new hash table with no initial size
-HashTable_t hashtable_init(uint32_t (*hash)(void*), int (*key_equals)(void*, void*), int (*value_equals)(void*, void*))
+HashTable_t* hashtable_init(uint32_t (*hash)(void*), int (*key_equals)(void*, void*), int (*value_equals)(void*, void*))
 {
-    HashTable_t ht = (HashTable_t)(malloc(sizeof(struct HashTable)));
+    HashTable_t* ht = (HashTable_t*)(malloc(sizeof(struct HashTable)));
     //If memory allocation fails, return null because everything has gone wrong
     if(ht == NULL)
     {
@@ -155,10 +145,10 @@ HashTable_t hashtable_init(uint32_t (*hash)(void*), int (*key_equals)(void*, voi
 }
 
 ///Create a new hash-table with an initial size.
-HashTable_t hashtable_initSize(uint32_t (*hash)(void*), int (*key_equals)(void*, void*), int (*value_equals)(void*, void*), size_t size)
+HashTable_t* hashtable_initSize(uint32_t (*hash)(void*), int (*key_equals)(void*, void*), int (*value_equals)(void*, void*), size_t size)
 {
     //Get an empty hash-table
-    HashTable_t ht = hashtable_init(hash, key_equals, value_equals);
+    HashTable_t* ht = hashtable_init(hash, key_equals, value_equals);
     ht->keys = (void**)(calloc(size, sizeof(void*)));
     //If memory allocation fails, return null because everything has gone wrong
     if(ht->keys == NULL)
@@ -178,7 +168,7 @@ HashTable_t hashtable_initSize(uint32_t (*hash)(void*), int (*key_equals)(void*,
 }
 
 ///Insert a new key-value pair into the HashTable, checking sizes and rehashing if necessary
-int hashtable_put(HashTable_t ht, void* key, void* value)
+int hashtable_put(HashTable_t* ht, void* key, void* value)
 {
     //The memory for keys and values has not yet been initialized, initialize them now.
     if(ht->mem_size == 0)
@@ -208,7 +198,7 @@ int hashtable_put(HashTable_t ht, void* key, void* value)
 }
 
 ///Get a value out of the hashtable based on the provided key.
-void* hashtable_get(HashTable_t ht, void* key)
+void* hashtable_get(HashTable_t* ht, void* key)
 {
     //Find the key if it exists
     int keyLocation = hashtable_findKeyLocation(ht, key);
@@ -222,7 +212,7 @@ void* hashtable_get(HashTable_t ht, void* key)
 }
 
 ///Gets a value out of the ht, or returns a default value if we couldn't find it.
-void* hashtable_getWithDefault(HashTable_t ht, void* key, void* defaultValue)
+void* hashtable_getWithDefault(HashTable_t* ht, void* key, void* defaultValue)
 {
     //Try to find the value as usual
     void* actualValue = hashtable_get(ht, key);
@@ -244,7 +234,7 @@ void* hashtable_getWithDefault(HashTable_t ht, void* key, void* defaultValue)
  * @return
  *  The removed value if the key was found and removed, NULL otherwise.
  */
-void* hashtable_remove(HashTable_t ht, void* key)
+void* hashtable_remove(HashTable_t* ht, void* key)
 {
     int keyLoc = hashtable_findKeyLocation(ht, key);
     //If we found an empty spot before we found the correct key, we don't have the key they're looking for, return null
@@ -260,7 +250,7 @@ void* hashtable_remove(HashTable_t ht, void* key)
 }
 
 ///Remove a k-v pair from the table if the value matches the provided value
-void* hashtable_removeIfValue(HashTable_t ht, void* key, void* value)
+void* hashtable_removeIfValue(HashTable_t* ht, void* key, void* value)
 {
     int keyLoc = hashtable_findKeyLocation(ht, key);
     //If we found an empty spot before we found the correct key, we don't have the key they're looking for.
@@ -279,7 +269,7 @@ void* hashtable_removeIfValue(HashTable_t ht, void* key, void* value)
 }
 
 /// Replaces the value mapped to a key in the hash table
-void* hashtable_replace(HashTable_t ht, void* key, void* newValue)
+void* hashtable_replace(HashTable_t* ht, void* key, void* newValue)
 {
     int keyLoc = hashtable_findKeyLocation(ht, key);
     if(keyLoc == -1)
@@ -291,7 +281,7 @@ void* hashtable_replace(HashTable_t ht, void* key, void* newValue)
     return val;
 }
 /// Replaces the value mapped to a key in the hashtable if both the key and value match the provided values.
-void* hashtable_replaceIfValue(HashTable_t ht, void* key, void* oldValue, void* newValue)
+void* hashtable_replaceIfValue(HashTable_t* ht, void* key, void* oldValue, void* newValue)
 {
     int keyLoc = hashtable_findKeyLocation(ht, key);
     if(keyLoc == -1 || !ht->value_equals(ht->values[keyLoc], oldValue))
@@ -304,13 +294,13 @@ void* hashtable_replaceIfValue(HashTable_t ht, void* key, void* oldValue, void* 
 }
 
 ///Returns non-zero if the provided key is mapped in the hashtable
-int hashtable_containsKey(HashTable_t ht, void* key)
+int hashtable_containsKey(HashTable_t* ht, void* key)
 {
     return hashtable_findKeyLocation(ht, key) != -1;
 }
 
 ///Returns non-zero if the provided value is mapped in the hashtable
-int hashtable_containsValue(HashTable_t ht, void* value)
+int hashtable_containsValue(HashTable_t* ht, void* value)
 {
     for(size_t i = 0; i < ht->mem_size; i++)
     {
@@ -323,19 +313,19 @@ int hashtable_containsValue(HashTable_t ht, void* value)
 }
 
 /// Checks the number of key-value mappings in the table.  DOES NOT return the amount of slots available in the table.
-size_t hashtable_size(HashTable_t ht)
+size_t hashtable_size(HashTable_t* ht)
 {
     return ht->size;
 }
 
 /// Checks if there are no key-value mappings in the table.
-int hashtable_isEmpty(HashTable_t ht)
+int hashtable_isEmpty(HashTable_t* ht)
 {
     return ht->size == 0;
 }
 
 /// Returns a list of all of the keys currently mapped in the hashtable
-List_t* hashtable_getKeys(HashTable_t ht)
+List_t* hashtable_getKeys(HashTable_t* ht)
 {
     ArrayList_t* keys = arraylist_init_len(ht->size);
     for(size_t i = 0; i < ht->mem_size; i++)
@@ -352,7 +342,7 @@ List_t* hashtable_getKeys(HashTable_t ht)
 }
 
 /// Frees all the memory used by the hashtable. DOES NOT call free on any keys or values in the table.
-void hashtable_destroy(HashTable_t ht)
+void hashtable_destroy(HashTable_t* ht)
 {
     free(ht->keys);
     ht->keys = NULL;
