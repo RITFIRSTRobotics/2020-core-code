@@ -27,11 +27,13 @@ typedef enum ListError {
 
 // List implementation enumeration
 typedef enum ListImplementation {
-    LIST_ARRAY  = 0,
-    LIST_LINKED = 0x01
+    LIST_ARRAY  = 0x01,
+    LIST_LINKED = 0x02,
+    LIST_QUEUE  = 0x03
 } ListImplementation_t;
 
 // "Abstract" list structure
+#pragma pack(push, 1) // disable struct packing
 typedef struct List {
     enum ListImplementation impl;
     enum ListError err;
@@ -39,6 +41,7 @@ typedef struct List {
     
     // abstract: add more below here
 } List_t;
+#pragma pack(pop)
 
 /**
  * Initialize a list with the default list length

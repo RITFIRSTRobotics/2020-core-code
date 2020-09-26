@@ -5,27 +5,31 @@
  *
  * @author Connor Henley, @thatging3rkid
  */
-#ifndef _LOCAL_HEADER
-    #error "This code should not be run outside of testing\n"
-#endif
-
 #define _DEFAULT_SOURCE
+
+// standards
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <memory.h>
 #include <unistd.h>
-#include <pthread.h>
 #include <stdbool.h>
 
+// math
+#include <math.h>
+
+// time
+#include <time.h>
+
+// threading
+#include <pthread.h>
+
+#include "test-utils.h"
 #include "../collections/list.h"
 #include "../collections/arraylist.h"
 #include "../collections/linkedlist.h"
 #include "../collections/stack.h"
 #include "../collections/queue.h"
-
-#define TEST_SUCCESS 0
-#define TEST_FAILURE 1
 
 #define FULL_TEST_ITEMS 2048
 
@@ -40,13 +44,7 @@ typedef struct {
 
 #define THREAD_TEST_ITEMS 2048
 
-/**
- * Returns the number of elements in a static array
- *
- * @macro
- * @param a the array
- */
-#define num_elements(a) (sizeof(a)/sizeof(a[0])) // returns the number of elements in the array
+#define SLOW_PRODUCER_SLEEP_MS (100)
 
 /**
  * Prints debugging information about the given list
@@ -61,6 +59,17 @@ typedef struct {
     } else if (x != NULL && x->impl == LIST_LINKED) { \
         fprintf(stderr, "{impl=LIST_LINKED, err=0x%0x, first=%p, last=%p} ", (x)->err, ((LinkedList_t*) x)->first, ((LinkedList_t*) x)->last); \
     } \
+}
+
+/**
+ * Get the current system time in milliseconds
+ *
+ * @returns the system time in milliseconds
+ */
+static uint64_t _gettime_ms() {
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    return (ts.tv_sec * 1000) + round(ts.tv_nsec / 1.0e6);
 }
 
 /*
@@ -424,6 +433,17 @@ int t07_threadsafe_test(ListImplementation_t type) {
 }
 
 /**
+ * Add an item to the queue after some amount of time
+ *
+ * @param _queue the queue to add the item to
+ * @returns none
+ */
+void* t08_slow_producer(void* _queue) {
+    msleep(SLOW_PRODUCER_SLEEP_MS);
+    queue_enqueue((Queue_t*) _queue, (void*)(intptr_t) 0x12);
+}
+
+/**
  * Test the basics of the queue (since the queue uses a linked list
  * internally, we don't need extensive tests).
  */
@@ -495,6 +515,24 @@ int t08_queue_test() {
         fprintf(stderr, "queue not empty (e=%u)", (uint32_t) e);
         return TEST_FAILURE;
     }
+
+    // Start the slow producer and block until it puts data in the queue
+    pthread_t t;
+    pthread_create(&t, NULL, t08_slow_producer, queue);
+    uint64_t time_start = _gettime_ms();
+    queue_block(queue);
+    uint64_t diff = _gettime_ms() - time_start;
+
+    // Make sure we actually slept for that time
+    if (diff < (SLOW_PRODUCER_SLEEP_MS * .8)) {
+        print_dbgdata(queue);
+        fprintf(stderr, "queue did not block (diff=%lu)\n", diff);
+        return TEST_FAILURE;
+    }
+
+    // Clean up the thread
+    uint32_t producer_result;
+    pthread_join(t, (void**) &producer_result);
 
     // Clean up
     queue_free(queue);

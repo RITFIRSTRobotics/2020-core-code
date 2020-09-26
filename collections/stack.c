@@ -7,14 +7,8 @@
  */
 #include <stdint.h>
 
-// do some preprocessor voodoo
-#ifdef _LOCAL_HEADER
-    #include "stack.h"
-    #include "linkedlist.h"
-#else
-    #include "core/collections/stack.h"
-    #include "core/collections/linkedlist.h"
-#endif
+#include "stack.h"
+#include "linkedlist.h"
 
 /**
  * @inherit

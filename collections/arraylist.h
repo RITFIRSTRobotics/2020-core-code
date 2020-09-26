@@ -12,18 +12,14 @@
 extern "C" {
 #endif
 
-// do some preprocessor voodoo
-#ifdef _LOCAL_HEADER
-    #include "list.h"
-#else
-    #include "core/collections/list.h"
-#endif
+#include "list.h"
 
 // Define list parameters
 #define DEFAULT_LIST_LENGTH 10
 #define DEFAULT_LIST_STEP   25
 
 // Array list structure "extends" List_t
+#pragma pack(push, 1) // disable struct packing
 typedef struct ArrayList {
     // "inherited"
     enum ListImplementation impl;
@@ -35,6 +31,7 @@ typedef struct ArrayList {
     uint32_t allocated; // length of memory allocated (in elements)
     void** array; // element array
 } ArrayList_t;
+#pragma pack(pop)
 
 /**
  * Initialize an array list with the default list length

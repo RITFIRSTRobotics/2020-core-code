@@ -1,0 +1,23 @@
+# core/network/llnet.valgrind.supp
+#
+# Valgrind supressions for the low level networking
+#
+# @author Connor Henley, @thatging3rkid
+{
+	<tcp_listener_prealloc>
+	Memcheck:Leak
+	...
+	fun:_llnet_listener_tcp
+}
+{
+	<udp_listener_prealloc>
+	Memcheck:Leak
+	...
+	fun:_llnet_listener_udp
+}
+{
+	<accepter_listener_prealloc>
+	Memcheck:Leak
+	...
+	fun:_llnet_accepter_thread
+}
