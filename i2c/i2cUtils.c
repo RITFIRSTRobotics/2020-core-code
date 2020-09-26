@@ -37,6 +37,7 @@ int i2cBus_initSlave(i2cBus bus, uint8_t slaveAddr)
 
 int8_t i2cBus_readByte(i2cBus bus, uint8_t addr, uint8_t reg)
 {
+	//TODO set errno instead of returning an error value
     if(i2cBus_writeBytes(bus, addr, (int8_t*)&reg, 1) != 1)
     {
         //TODO error handling
