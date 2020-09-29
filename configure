@@ -93,14 +93,17 @@ if ! [[ $git_hash =~ [0-9a-f]{7} ]]; then
 fi
 git_hash="GIT_HASH="${git_hash}
 
-# Add the build-all instruction
+# Add the build-all instruction, ensuring that we clean before a build as cleaning will remove the obj dir
 printf '\nall:\n' >>Makefile
 for s in "${dirs[@]}"
 do
     printf '\t-make %s %s -C %s clean\n' ${make_mode} ${git_hash} ${s} >>Makefile
+done
+for s in "${dirs[@]}"
+do
     printf '\tmake %s %s -k -C %s ci-build\n' ${make_mode} ${git_hash} ${s} >>Makefile
 done
-printf '\t@echo "Finished running all ci-build"\n' >>Makefile
+printf '\t@echo "Finished running ci-build for all"\n' >>Makefile
 
 # Add the test instruction
 printf '\ncheck:\n' >>Makefile
@@ -108,6 +111,15 @@ for s in "${dirs[@]}"
 do
      printf '\tmake %s %s -k -C %s ci-test\n' ${make_mode} ${git_hash} ${s} >>Makefile
 done
-printf '\t@echo "Finished running all ci-test"\n\n' >>Makefile
+printf '\t@echo "Finished running ci-test for all"\n' >>Makefile
+
+# Add the clean instruction
+printf '\nclean:\n' >>Makefile
+# We need to clean everything before we make anything, or the clean instructions will wipe all the previous obj files
+for s in "${dirs[@]}"
+do
+    printf '\t-make %s %s -C %s clean\n' ${make_mode} ${git_hash} ${s} >>Makefile
+done
+printf '\t@echo "Finished running clean for all"\n' >>Makefile
 
 echo "Complete!"
