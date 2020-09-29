@@ -98,6 +98,9 @@ printf '\nall:\n' >>Makefile
 for s in "${dirs[@]}"
 do
     printf '\t-make %s %s -C %s clean\n' ${make_mode} ${git_hash} ${s} >>Makefile
+done
+for s in "${dirs[@]}"
+do
     printf '\tmake %s %s -k -C %s ci-build\n' ${make_mode} ${git_hash} ${s} >>Makefile
 done
 printf '\t@echo "Finished running all ci-build"\n' >>Makefile
