@@ -95,6 +95,7 @@ git_hash="GIT_HASH="${git_hash}
 
 # Add the build-all instruction
 printf '\nall:\n' >>Makefile
+# We need to clean everything before we make anything, or the clean instructions will wipe all the previous obj files
 for s in "${dirs[@]}"
 do
     printf '\t-make %s %s -C %s clean\n' ${make_mode} ${git_hash} ${s} >>Makefile
