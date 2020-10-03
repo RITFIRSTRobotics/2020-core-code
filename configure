@@ -144,4 +144,7 @@ do
 done
 printf '\t@echo "Finished running clean for all"\n' >>Makefile
 
+# Supply the required recipes (just in case another makefile is above this one)
+printf '\n# Required recipes\nci-build: all\nci-test: check\n' >>Makefile
+
 echo "Complete!"
