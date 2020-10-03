@@ -7,32 +7,42 @@
 
 # run an apt-get update if this is automated
 if test -e "config.onpush" || test -e "config.full"; then
-    sudo apt-get update -qq
+    if ! [[ -z "${CI}" ]]; then
+        sudo apt-get update -qq
+    fi
 fi
 
 # install valgrind
 if ! [ -x "$(command -v valgrind)" ]; then
-    sudo apt-get install -y valgrind
+    if ! [[ -z "${CI}" ]]; then
+        sudo apt-get install -y valgrind
+    else
+        printf "[*err] valgrind not installed\n"
+    fi
 fi
 
 # install pdflatex (only for full builds)
 if ! [ -x "$(command -v pdflatex)" ] && test -e "config.full"; then
-    # Install MiKTeX
-    sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 \
-        --recv-keys D6BC243565B2087BC3F897C9277A7293F59E4889 > /dev/null
-    echo "deb https://mirrors.rit.edu/CTAN/systems/win32/miktex/setup/deb `lsb_release -c -s` universe" | \
-        sudo tee /etc/apt/sources.list.d/miktex.list > /dev/null
-    sudo apt-get update -qq && sudo apt-get install -y miktex
+    if ! [[ -z "$CI" ]]; then
+        # Install MiKTeX
+        sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 \
+            --recv-keys D6BC243565B2087BC3F897C9277A7293F59E4889 > /dev/null
+        echo "deb https://mirrors.rit.edu/CTAN/systems/win32/miktex/setup/deb `lsb_release -c -s` universe" | \
+            sudo tee /etc/apt/sources.list.d/miktex.list > /dev/null
+        sudo apt-get update -qq && sudo apt-get install -y miktex
 
-    # check for error
-    if ! [ $? == 0 ]; then
-        exit 1;
+        # check for error
+        if ! [ $? == 0 ]; then
+            exit 1;
+        fi
+
+        # Setup MiKTeX and enable auto-package installation
+        sudo miktexsetup --shared=yes finish && sudo initexmf --admin --set-config-value [MPM]AutoInstall=1
+        sudo mpm --admin --set-repository=http://mirrors.rit.edu/CTAN/systems/win32/miktex/tm/packages/
+        sudo mpm --admin --update-db # update database, should fix auto-package installation
+    else
+        printf "[warn] MiKTeX not installed\n"
     fi
-
-    # Setup MiKTeX and enable auto-package installation
-    sudo miktexsetup --shared=yes finish && sudo initexmf --admin --set-config-value [MPM]AutoInstall=1
-    sudo mpm --admin --set-repository=http://mirrors.rit.edu/CTAN/systems/win32/miktex/tm/packages/
-    sudo mpm --admin --update-db # update database, should fix auto-package installation
 fi
 
 # make sure lib directory exists
