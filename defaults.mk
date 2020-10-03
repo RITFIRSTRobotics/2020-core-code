@@ -33,7 +33,7 @@ else
 export CXXFLAGS = $(CXXFLAGS_BASE)
 endif
 
-all: # empty
+all: ; @# do nothing
 
 # default rule to compile C into an object
 # note: experimental and does not account for header files
