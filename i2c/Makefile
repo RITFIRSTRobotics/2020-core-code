@@ -12,9 +12,9 @@ TEST_OBJ_DIR=$(TEST_DIR)/obj
 
 ### Build recipes
 
-all: $(OBJ_DIR)/i2cUtils.o
+all: $(OBJ_DIR)/i2cutils.o
 
-$(OBJ_DIR)/i2cUtils.o: i2cUtils.c i2cUtils.h
+$(OBJ_DIR)/i2cutils.o: i2cutils.c i2cutils.h
 	@mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
