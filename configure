@@ -50,20 +50,24 @@ if ! test -d "lib"; then
     mkdir lib
 fi
 
+# Define the make mode
+if test -e "config.onpush"; then
+    make_mode="onpush"
+elif test -e "config.full"; then
+    make_mode="full"
+else
+    make_mode="dev"
+fi
+
+# debugging: log the make mode
+printf '[info] make_mode=%s\n' ${make_mode}
+
 # Start the makefile, put the header down
 printf "" >Makefile
 printf '# %s makefile\n' "${PWD##*/}" >>Makefile
 
-# Print the configuration file status
-if test -e "config.onpush"; then
-    printf '# configuration: on-push\n' >>Makefile
-elif test -e "config.full"; then
-    printf '# configuration: full\n' >>Makefile
-else
-    printf '# configuration: dev\n' >>Makefile
-fi
-
-# finish debugging info
+# Print some debugging info into the file
+printf '# configuration: %s' ${make_mode} >>Makefile
 printf '# Generated on: %s at %s\n' "$HOSTNAME" "`date`" >>Makefile
 
 # Mark directories to ignore
@@ -87,15 +91,6 @@ do
     fi
 done
 
-# Define the make mode
-if test -e "config.onpush"; then
-    make_mode="MAKE_CONFIG=ONPUSH"
-elif test -e "config.full"; then
-    make_mode="MAKE_CONFIG=FULL"
-else
-    make_mode="MAKE_CONFIG=DEV"
-fi
-
 # Define the git hash
 git_hash=`git describe --always`
 if ! [[ $git_hash =~ [0-9a-f]{7} ]]; then
@@ -103,24 +98,32 @@ if ! [[ $git_hash =~ [0-9a-f]{7} ]]; then
 fi
 git_hash="GIT_HASH="${git_hash}
 
+# Build the parameter to pass to other makefiles
+make_mode_param="MAKE_MODE=${make_mode^^}"
+
 # define a function to generate each line of the makefile
 #
 # @param $1 the make command to run
 # @param $2 the file/directory to generate a make entry for
 gen_makefile_line(){
     if test -f ${1}; then
-        printf '\t-make %s %s -f %s %s\n' ${make_mode} ${git_hash} ${1} ${2} >>Makefile
+        printf '\t-make %s %s -f %s %s\n' ${make_mode_param} ${git_hash} ${1} ${2} >>Makefile
     else
-        printf '\t-make %s %s -C %s %s\n' ${make_mode} ${git_hash} ${1} ${2} >>Makefile
+        printf '\t-make %s %s -C %s %s\n' ${make_mode_param} ${git_hash} ${1} ${2} >>Makefile
     fi
 }
 
 # Add the build-all instruction, ensuring that we clean before a build as cleaning will remove the obj dir
 printf '\nall:\n' >>Makefile
-for s in "${dirs[@]}"
-do
-    gen_makefile_line ${s} "clean";
-done
+
+# run a clean before a on-push or full build, as this will remove the obj dir
+if [[ "${make_mode}" != "dev" ]]; then
+    for s in "${dirs[@]}"
+    do
+        gen_makefile_line ${s} "clean";
+    done
+fi
+
 for s in "${dirs[@]}"
 do
     gen_makefile_line ${s} "ci-build";
