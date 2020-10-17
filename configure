@@ -67,7 +67,7 @@ printf "" >Makefile
 printf '# %s makefile\n' "${PWD##*/}" >>Makefile
 
 # Print some debugging info into the file
-printf '# configuration: %s' ${make_mode} >>Makefile
+printf '# configuration: %s\n' ${make_mode} >>Makefile
 printf '# Generated on: %s at %s\n' "$HOSTNAME" "`date`" >>Makefile
 
 # Mark directories to ignore
@@ -103,15 +103,25 @@ make_mode_param="MAKE_MODE=${make_mode^^}"
 
 # define a function to generate each line of the makefile
 #
-# @param $1 the make command to run
-# @param $2 the file/directory to generate a make entry for
+# @param $1 the file/directory to generate a make entry for
+# @param $2 the make command to run
 gen_makefile_line(){
+    # generate a make prefix (ignore errors for clean commands)
+    make_cmd="make"
+    if [[ "${2}" == "clean" ]]; then
+        make_cmd="-make"
+    fi
+
+    # generate the specific make commands
     if test -f ${1}; then
-        printf '\t-make %s %s -f %s %s\n' ${make_mode_param} ${git_hash} ${1} ${2} >>Makefile
-    else
-        printf '\t-make %s %s -C %s %s\n' ${make_mode_param} ${git_hash} ${1} ${2} >>Makefile
+        # make command for a specific file (i.e. make.mk)
+        printf '\t%s %s %s -f %s %s\n' ${make_cmd} ${make_mode_param} ${git_hash} ${1} ${2} >>Makefile
+    elif test -d ${1}; then
+        # a make command for a directory with a Makefile
+        printf '\t%s %s %s -C %s %s\n' ${make_cmd} ${make_mode_param} ${git_hash} ${1} ${2} >>Makefile
     fi
 }
+
 
 # Add the build-all instruction, ensuring that we clean before a build as cleaning will remove the obj dir
 printf '\nall:\n' >>Makefile
@@ -150,4 +160,4 @@ printf '\t@echo "Finished running clean for all"\n' >>Makefile
 # Supply the required recipes (just in case another makefile is above this one)
 printf '\n# Required recipes\nci-build: all\nci-test: check\n' >>Makefile
 
-echo "Complete!"
+echo "2020-core-code configure complete!"
