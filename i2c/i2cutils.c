@@ -1,7 +1,7 @@
 //
 // Created by Alex Kneipp on 10/12/19.
 //
-#include "i2cUtils.h"
+#include "i2cutils.h"
 #include <errno.h>
 
 static int slaveIsOnBus(i2cBus bus, uint8_t slaveAddr)
