@@ -4,6 +4,7 @@
 #include "messagehandler.h"
 #include "hashtable.h"
 #include "queue.h"
+#include "packethandlers.h"
 
 //Global static array so we can iterate over every type of packet easily
 static PacketType_t PTYPES[NUM_PACKET_TYPES] = {
@@ -78,27 +79,40 @@ void sort_packet(IntermediateTLV_t* packet)
     //TODO Get packet from ll interface,
     //Pass IntermediateTLV_t* to the correct unpacker,
     //Get the unpacked packet and put it in the correct bucket.
+    PacketTLV_t* packetToSort;
     switch(packet->type)
     {
         case pt_INIT:
+            packetToSort = unpackInit(packet);
             break;
         case pt_STATE_REQUEST:
+            packetToSort = unpackStateRequest(packet);
             break;
         case pt_STATE_RESPONSE:
+            packetToSort = unpackStateResponse(packet);
             break;
         case pt_STATE_UPDATE:
+            packetToSort = unpackStateUpdate(packet);
             break;
         case pt_CONFIG_REQUEST:
+            packetToSort = unpackConfigRequest(packet);
             break;
         case pt_CONFIG_RESPONSE:
+            packetToSort = unpackConfigResponse(packet);
             break;
         case pt_CONFIG_UPDATE:
+            packetToSort = unpackConfigUpdate(packet);
             break;
         case pt_USER_DATA:
+            packetToSort = unpackUserData(packet);
             break;
         case pt_UPDATE_STATUS:
+            //TODO log a message here that we're not handling updatestatus messages
+            //TODO or handle UpdateStatus messages
             break;
         case pt_DEBUG:
+            packetToSort = unpackDebug(packet);
             break;
     }
+    queue_enque((Queue_t*)hashtable_get(buckets, packetToSort->type), packetToSort);
 }
