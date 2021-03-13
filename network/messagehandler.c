@@ -21,7 +21,7 @@ static PacketType_t PTYPES[NUM_PACKET_TYPES] = {
 };
 
 // Key type = PacketType_t, Value type = Queue_t* <PTLVData_Base*>
-static HashTable_t buckets = NULL;
+static HashTable_t* buckets = NULL;
 
 static uint32_t hash_PacketType(void* pt)
 {
@@ -30,7 +30,7 @@ static uint32_t hash_PacketType(void* pt)
 
 static int equals_PacketType(void* pt1, void* pt2)
 {
-    return (pt1 == pt2)
+    return (pt1 == pt2);
 }
 
 
@@ -59,7 +59,7 @@ int mh_init()
         if (bucketQueue != NULL)
         {
             //hashtable insertion failed, but this is potentially recoverable, return a warning but continue
-            if(hashtable_put(buckets, PTYPES[i], bucketQueue) == 0)
+            if(hashtable_put(buckets, (void*)(PTYPES[i]), bucketQueue) == 0)
             {
                 rval = MH_WRN_INITIALIZATION_INCOMPLETE;
             }
@@ -114,5 +114,5 @@ void sort_packet(IntermediateTLV_t* packet)
             packetToSort = unpackDebug(packet);
             break;
     }
-    queue_enque((Queue_t*)hashtable_get(buckets, packetToSort->type), packetToSort);
+    queue_enqueue((Queue_t*)hashtable_get(buckets, (void*)((PacketType_t)packetToSort->type)), packetToSort);
 }
