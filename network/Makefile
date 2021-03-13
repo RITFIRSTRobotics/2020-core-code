@@ -15,7 +15,7 @@ UTILITY_CODE=constants.h $(OBJ_DIR)/netutils.o
 
 ### Build recipes
 
-all: $(OBJ_DIR)/lowlevel.o $(OBJ_DIR)/packethandlers.o
+all: $(OBJ_DIR)/lowlevel.o $(OBJ_DIR)/packethandlers.o $(OBJ_DIR)/netutils.o $(OBJ_DIR)/messagehandler.o
 
 $(OBJ_DIR)/lowlevel.o: lowlevel.c lowlevel.h $(UTILITY_CODE)
 	@mkdir -p $(OBJ_DIR)
@@ -29,6 +29,10 @@ $(OBJ_DIR)/packethandlers.o: packethandlers.c packethandlers.h packet.h lowlevel
 	@mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(OBJ_DIR)/messagehandler.o: messagehandler.c messagehandler.h $(OBJ_DIR)/hashtable.o $(OBJ_DIR)/queue.o $(OBJ_DIR)/packethandlers.o
+	@mkdir -p $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c -o $@ $< -I ../collections
+
 ### Utility recipes
 
 $(OBJ_DIR)/arraylist.o:
@@ -38,6 +42,12 @@ $(OBJ_DIR)/list.o:
 	make -C ../collections/ $@
 
 $(OBJ_DIR)/linkedlist.o:
+	make -C ../collections/ $@
+
+$(OBJ_DIR)/hashtable.o:
+	make -C ../collections/ $@
+
+$(OBJ_DIR)/queue.o:
 	make -C ../collections/ $@
 
 ### Testing recipes
