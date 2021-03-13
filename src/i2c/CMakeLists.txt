@@ -1,1 +1,1 @@
-add_library(I2C i2cutils.c)
+add_library(I2C OBJECT i2cutils.c)

@@ -12,3 +12,11 @@ add_subdirectory(i2c)
 add_subdirectory(serial)
 add_subdirectory(test)
 add_subdirectory(utils)
+
+add_library(core STATIC $<TARGET_OBJECTS:Collections>
+        $<TARGET_OBJECTS:Network>
+        $<TARGET_OBJECTS:I2C>
+        #$<TARGET_OBJECTS:Serial>
+        #$<TARGET_OBJECTS:Utils>
+        )
+
