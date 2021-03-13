@@ -23,5 +23,12 @@ add_library(core STATIC $<TARGET_OBJECTS:Collections>
 #Get the git commit hash for the project
 execute_process(COMMAND git rev-parse --short HEAD WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE _GIT_HASH)
 message(STATUS "git Commit Hash: ${_GIT_HASH}")
-add_compile_definitions(core GIT_COMMIT_HASH "0x${_GIT_HASH}")
+add_compile_definitions(GIT_COMMIT_HASH=0x${_GIT_HASH})
 
+#Add our existing unit tests
+#Uses the exit code to determine success or failure
+enable_testing()
+add_test(NAME Hashtable COMMAND $<TARGET_FILE:test-hashtable>)
+add_test(NAME List COMMAND $<TARGET_FILE:test-list>)
+add_test(NAME LLNet COMMAND $<TARGET_FILE:test-llnet>)
+add_test(NAME PacketHandlers COMMAND $<TARGET_FILE:test-packethandlers>)
