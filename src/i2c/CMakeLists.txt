@@ -1,0 +1,1 @@
+add_library(I2C i2cutils.c)

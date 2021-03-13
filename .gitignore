@@ -5,6 +5,7 @@
 # object directory and scratch directory
 obj/
 tmp/
+build/
 
 # JetBrains IDE junk
 .idea
