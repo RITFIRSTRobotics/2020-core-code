@@ -25,7 +25,7 @@ jobs:
 
     # mark that we're running an on-push build
     - name: Setup
-      run: touch config.onpush
+      run: touch config.onpush && sudo apt-get install -y valgrind
 
     # run ./configure
     - name: Configure
